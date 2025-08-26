@@ -1,0 +1,93 @@
+package handler
+
+import (
+	"chatbot/database"
+	"chatbot/model"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/google/uuid"
+)
+
+var store = session.New()
+
+const jwtSecret = "Ryzen#10"
+
+func generateJWT(userID string, expiresAt time.Time) (string, error) {
+	claims := jwt.StandardClaims{
+		ExpiresAt: expiresAt.Unix(),
+		IssuedAt:  time.Now().Unix(),
+		Subject:   "auth",
+	}
+
+	// Create the token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
+
+func Login(c *fiber.Ctx) error {
+	db := database.DB
+
+	// Parse login credentials from request body
+	credentials := new(model.LoginCredentials)
+	if err := c.BodyParser(credentials); err != nil {
+		return c.Status(400).JSON(fiber.Map{"message": "Invalid request"})
+	}
+
+	// Find user with matching email in the database
+	user := new(model.UserSignUp)
+	if err := db.Where("email = ?", credentials.Email).First(user).Error; err != nil {
+		return c.Status(401).JSON(fiber.Map{"message": "Invalid email or password"})
+	}
+
+	// Compare the provided password with the user's password
+	if user.Password != credentials.Password {
+		return c.Status(401).JSON(fiber.Map{"message": "Invalid email or password"})
+	}
+
+	// Generate a new UUID for the user
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Could not generate user ID"})
+	}
+
+	// Convert UUID to string
+	userID := id.String()
+
+	// Calculate the token expiration time (5 minutes from now)
+	expiresAt := time.Now().Add(5 * time.Minute)
+
+	// Generate JWT token
+	tokenString, err := generateJWT(userID, expiresAt)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Token generation error"})
+	}
+
+	// Return the token in the JSON response
+	return c.Status(200).JSON(fiber.Map{"token": tokenString})
+}
+
+func Logout(c *fiber.Ctx) error {
+	// Bawiin ang session ng user
+	session, err := store.Get(c)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Session error"})
+	}
+
+	// Alisin ang user_id mula sa session
+	session.Delete("user_id")
+
+	// Save ang session pagkatapos ng pagbura
+	if err := session.Save(); err != nil {
+		return c.Status(500).JSON(fiber.Map{"message": "Session save error"})
+	}
+
+	// Return success response
+	return c.Status(200).JSON(fiber.Map{"message": "Logged out successfully"})
+}
