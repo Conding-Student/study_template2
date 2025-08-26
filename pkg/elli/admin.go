@@ -19,4 +19,7 @@ func admin_practice_creation(c *fiber.Ctx) error {
 		return sharedfunctions.SendErrorResponse(c, 401, "401", status.RetCode401, "Failed to parse practice creation credentials", false, err)
 	}
 
+	// staffInfo := sharedfunctions.GetStringFromMap(user_input, "staffId")
+	// isSuccess, retCodeInt, retCode, responseStatus, message, err := sharedfunctions.AccountCreationAdmin(staffInfo)
+
 }
