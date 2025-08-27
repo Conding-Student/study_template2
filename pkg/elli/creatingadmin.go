@@ -10,7 +10,7 @@ import (
 	"log"
 )
 
-func creating_admin_account(staffInfo map[string]any) (bool, int, string, string, string, error) {
+func Creating_admin_account(staffInfo map[string]any) (bool, int, string, string, string, error) {
 	db := database.DB
 	secretKey := utils.GetEnv("SECRET_KEY")
 
@@ -22,7 +22,7 @@ func creating_admin_account(staffInfo map[string]any) (bool, int, string, string
 	// Create temporary username
 	temporaryUsername, err := sharedfunctions.CreateTemporaryUsername(firstName, middleName, lastName)
 	if err != nil {
-		return false, 401, "401", status.RetCode500, "Failed to generate temporary username. First and Last name is empty", err
+		return false, 401, "401", status.RetCode500, "Failed to generate temporary username. First, MiddleName and Last Name is empty", err
 	}
 
 	// Generate password

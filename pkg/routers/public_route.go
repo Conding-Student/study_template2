@@ -12,6 +12,7 @@ import (
 	usermanagement "chatbot/pkg/admin_super/user_management"
 	"chatbot/pkg/authentication"
 	"chatbot/pkg/controllers/healthchecks"
+	practice "chatbot/pkg/elli"
 	"chatbot/pkg/eloading"
 	"chatbot/pkg/empc"
 	"chatbot/pkg/esystem"
@@ -185,6 +186,9 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint := v1Endpoint.Group("/admin", handler.AuthMiddleware)
 	adminEnpoint.Post("/login/:id", administrator.AdminLogin)
 	adminEnpoint.Post("/logout/:id", users.Logout)
+
+	//practice
+	adminEnpoint.Post("/register", practice.Admin_practice_creation)
 
 	adminEnpoint.Post("/institutionslist", authentication.ValidateAdminToken, handler.Institutions)
 	adminEnpoint.Get("/getallusers/:id", authentication.ValidateSuperAdminToken, usermanagement.GetAllUsers)
