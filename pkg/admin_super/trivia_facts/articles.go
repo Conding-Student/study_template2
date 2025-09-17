@@ -5,8 +5,8 @@ import (
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
 	"chatbot/pkg/sharedfunctions"
+	"encoding/base64"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
@@ -17,14 +17,14 @@ type RepoQueryParams struct {
 	ID int64 `json:"id"`
 }
 type TriviaAndArticles struct {
-	ID          int    `json:"id" form:"id"`
-	Featurename string `json:"featurename" form:"featurename"`
-	Title       string `json:"title" form:"title"`
-	Content     string `json:"content" form:"content"`
-	Image       string `json:"image" form:"-"`
-	Link        string `json:"link" form:"link"`
-	Linktitle   string `json:"linktitle" form:"linktitle"`
-	Author      string `json:"author" form:"author"`
+	ID          int    `json:"id"`
+	Featurename string `json:"featurename"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Image       string `json:"image"` // Remove form:"-" to accept JSON
+	Link        string `json:"link"`
+	Linktitle   string `json:"linktitle"`
+	Author      string `json:"author"`
 }
 
 type DeletionArticleTrivia struct {
@@ -69,33 +69,28 @@ func InsertArticleOrTrivia(c *fiber.Ctx) error {
 	staffID := c.Params("id")
 	article := new(TriviaAndArticles)
 
-	// Parse form data
+	// Parse JSON body
 	if err := c.BodyParser(article); err != nil {
 		return c.Status(400).JSON(response.ResponseModel{
 			RetCode: "400",
-			Message: "Invalid form data",
+			Message: "Invalid JSON data",
 			Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
 		})
 	}
 
-	// Handle image upload
-	fileHeader, err := c.FormFile("image")
-	if err == nil {
-		file, err := fileHeader.Open()
+	// Handle base64 image
+	if article.Image != "" {
+		// Remove data URL prefix if present (e.g., "data:image/png;base64,")
+		base64Data := article.Image
+		if idx := strings.Index(base64Data, ","); idx != -1 {
+			base64Data = base64Data[idx+1:]
+		}
+
+		fileBytes, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			return c.Status(400).JSON(response.ResponseModel{
 				RetCode: "400",
-				Message: "Invalid image file",
-				Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
-			})
-		}
-		defer file.Close()
-
-		fileBytes, err := io.ReadAll(file)
-		if err != nil {
-			return c.Status(500).JSON(response.ResponseModel{
-				RetCode: "500",
-				Message: "Cannot read image file",
+				Message: "Invalid base64 image",
 				Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
 			})
 		}
@@ -115,7 +110,7 @@ func InsertArticleOrTrivia(c *fiber.Ctx) error {
 		}
 	}
 
-	// Save to DB
+	// Save to DB (pass as JSONB)
 	result, err := Insert_ArticleOrTrivia(article)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
@@ -173,33 +168,28 @@ func UpdateArticleOrTrivia(c *fiber.Ctx) error {
 	staffID := c.Params("id")
 	trivia := new(TriviaAndArticles)
 
-	// Parse form data
+	// Parse JSON data
 	if err := c.BodyParser(trivia); err != nil {
 		return c.Status(400).JSON(response.ResponseModel{
 			RetCode: "400",
-			Message: "Invalid form data",
+			Message: "Invalid JSON data",
 			Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
 		})
 	}
 
-	// Handle image upload if provided
-	fileHeader, err := c.FormFile("image")
-	if err == nil {
-		file, err := fileHeader.Open()
+	// Handle base64 image if provided
+	if trivia.Image != "" && !strings.HasPrefix(trivia.Image, "http") {
+		// Remove data URL prefix if present (e.g., "data:image/png;base64,")
+		base64Data := trivia.Image
+		if idx := strings.Index(base64Data, ","); idx != -1 {
+			base64Data = base64Data[idx+1:]
+		}
+
+		fileBytes, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			return c.Status(400).JSON(response.ResponseModel{
 				RetCode: "400",
-				Message: "Invalid image file",
-				Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
-			})
-		}
-		defer file.Close()
-
-		fileBytes, err := io.ReadAll(file)
-		if err != nil {
-			return c.Status(500).JSON(response.ResponseModel{
-				RetCode: "500",
-				Message: "Cannot read image file",
+				Message: "Invalid base64 image",
 				Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
 			})
 		}
@@ -220,7 +210,6 @@ func UpdateArticleOrTrivia(c *fiber.Ctx) error {
 	}
 
 	// Get existing feature image
-	// Convert struct to map for the Get_FeatureImage function
 	imgLink, err := Get_FeatureImage(trivia)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
@@ -230,15 +219,18 @@ func UpdateArticleOrTrivia(c *fiber.Ctx) error {
 		})
 	}
 
-	// Delete old GitHub image if exists
-	if imageURL := sharedfunctions.GetStringFromMap(imgLink, "FeatureImage"); imageURL != "" {
-		if parts := strings.Split(imageURL, "/uploads/"); len(parts) == 2 {
-			if err := DeleteFromGitHub(parts[1]); err != nil {
-				return c.Status(500).JSON(response.ResponseModel{
-					RetCode: "500",
-					Message: "GitHub delete failed",
-					Data:    errors.ErrorModel{Message: "Cannot delete image from GitHub", IsSuccess: false, Error: err},
-				})
+	// Delete old GitHub image if exists and a new image was uploaded
+	if trivia.Image != "" {
+		imageURL := sharedfunctions.GetStringFromMap(imgLink, "FeatureImage")
+		if imageURL != "" {
+			if parts := strings.Split(imageURL, "/uploads/"); len(parts) == 2 {
+				if err := DeleteFromGitHub(parts[1]); err != nil {
+					return c.Status(500).JSON(response.ResponseModel{
+						RetCode: "500",
+						Message: "GitHub delete failed",
+						Data:    errors.ErrorModel{Message: "Cannot delete image from GitHub", IsSuccess: false, Error: err},
+					})
+				}
 			}
 		}
 	}

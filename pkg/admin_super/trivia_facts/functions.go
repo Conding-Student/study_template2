@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 )
 
 func Get_Articles() (map[string]any, error) {
@@ -219,7 +221,13 @@ func UploadToGitHub(filename string, content []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Trim any whitespace from the token
+	gitHubToken = strings.TrimSpace(gitHubToken)
 
+	// For debugging, print the first 5 characters of the token and the URLs (be cautious)
+	log.Printf("GitHub Token (first 5 chars): %s", gitHubToken[:5])
+	log.Printf("GitHub URL: %s", gitHubUrl)
+	log.Printf("GitHub Image Link: %s", gitHubImageLink)
 	// Build the path and URL
 	url := gitHubUrl + filename
 

@@ -208,7 +208,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Get("/getArticles" /*authentication.ValidateSuperAdminToken,*/, triviafacts.GetArticles)
 	//adminEnpoint.Post("/updateArticles" /*authentication.ValidateSuperAdminToken,*/, triviafacts.UpdateArticles)
 	adminEnpoint.Post("/insertArticlesOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.InsertArticleOrTrivia)
-	adminEnpoint.Post("/deleteArticleOrTrivia" /*authentication.ValidateSuperAdminToken,*/, triviafacts.DeleteArticleOrTrivia)
+	adminEnpoint.Post("/deleteArticleOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.DeleteArticleOrTrivia)
 	adminEnpoint.Post("/getLogs" /*authentication.ValidateSuperAdminToken,*/, logs.GetLogs)
 	adminEnpoint.Get("/getWishLists" /*authentication.ValidateSuperAdminToken,*/, administrator.GetWishList)
 	adminEnpoint.Get("/getInstitutionAndClientCount", authentication.ValidateSuperAdminToken, administrator.GetInstiAndClientCount)
