@@ -124,7 +124,7 @@ func Update_ArticlesOrTrivia(params *TriviaAndArticles) (map[string]any, error) 
 func Delete_triviaorfacts(params *TriviaAndArticles) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
-
+	// Delete via Postgres function
 	if err := db.Raw("SELECT public.delete_triviaorfatcs(?)", params).Scan(&result).Error; err != nil {
 		return nil, err
 	}
