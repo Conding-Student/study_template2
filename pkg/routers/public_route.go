@@ -49,6 +49,10 @@ func SetupPublicRoutes(app *fiber.App) {
 			Data:    nil,
 		})
 	})
+
+	publicEndpoint.Post("/logtrial", audittrail.Access_log_trial)
+	v1Endpoint.Get("/errorlogs", logs.TriggerErrorLog)
+
 	v1Endpoint.Post("/educationalAttainment", handler.AuthMiddleware, handler.EducationalAttainments)
 	v1Endpoint.Post("/genders", handler.AuthMiddleware, handler.Genders)
 	v1Endpoint.Post("/institutions", handler.AuthMiddleware, handler.Institutions)
@@ -103,7 +107,7 @@ func SetupPublicRoutes(app *fiber.App) {
 	loanCalculatorEndpoint.Get("/calcLoanProducts/:id", loans.LoanProducts)
 	loanCalculatorEndpoint.Post("/computeloan/:id", loancalc.BankLoanCalculator)
 
-	gabayKonekEndpoint := v1Endpoint.Group("/gabaykonek", handler.AuthMiddleware, handler.ServerSwitchGabayKonek)
+	gabayKonekEndpoint := v1Endpoint.Group("/gabaykonek" /*handler.AuthMiddleware, handler.ServerSwitchGabayKonek*/)
 
 	loanEndpoint := gabayKonekEndpoint.Group("/loan")
 	loanEndpoint.Get("/loanProductListAndDetails", authentication.ValidateUserToken, loans.LoanProductListAndDetails)
@@ -126,7 +130,7 @@ func SetupPublicRoutes(app *fiber.App) {
 	qslsalEndpoint := gabayKonekEndpoint.Group("/qslsal", authentication.ValidateUserToken)
 	qslsalEndpoint.Get("/qslsalfields/:id", qslsal.GetFields)
 
-	creditLineEndpoint := gabayKonekEndpoint.Group("/creditline", authentication.ValidateUserToken)
+	creditLineEndpoint := gabayKonekEndpoint.Group("/creditline" /*authentication.ValidateUserToken*/)
 	creditLineEndpoint.Get("/fields/:id", creditline.GetCreditLineFields)
 	creditLineEndpoint.Get("/properties/:id", creditline.GetCreditLineProperties)
 	creditLineEndpoint.Post("/creation/:id", creditline.CreditLineCreation)
@@ -183,7 +187,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 
 	// Service health check
 	v1Endpoint.Get("/", healthchecks.CheckServiceHealthB)
-	adminEnpoint := v1Endpoint.Group("/admin", handler.AuthMiddleware)
+	adminEnpoint := v1Endpoint.Group("/admin" /*handler.AuthMiddleware*/)
 	adminEnpoint.Post("/login/:id", administrator.AdminLogin)
 	adminEnpoint.Post("/logout/:id", users.Logout)
 
@@ -197,14 +201,16 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Post("syncuserdata/:id", authentication.ValidateAdminToken, usermanagement.SyncUserData)
 
 	// With superadmin token validation
-	adminEnpoint.Get("/serverSwitch", authentication.ValidateSuperAdminToken, switches.GetSwitch)
-	adminEnpoint.Post("/updateSwitch", authentication.ValidateSuperAdminToken, switches.UpdateSwitch)
-	adminEnpoint.Get("/getTrivia", authentication.ValidateSuperAdminToken, triviafacts.GetTrivia)
-	adminEnpoint.Post("/updateTrivia", authentication.ValidateSuperAdminToken, triviafacts.UpdateTrivia)
-	adminEnpoint.Get("/getArticles", authentication.ValidateSuperAdminToken, triviafacts.GetArticles)
-	adminEnpoint.Post("/updateArticles", authentication.ValidateSuperAdminToken, triviafacts.UpdateArticles)
-	adminEnpoint.Post("/getLogs", authentication.ValidateSuperAdminToken, logs.GetLogs)
-	adminEnpoint.Get("/getWishLists", authentication.ValidateSuperAdminToken, administrator.GetWishList)
+	adminEnpoint.Get("/serverSwitch" /*authentication.ValidateSuperAdminToken,*/, switches.GetSwitch)
+	adminEnpoint.Post("/updateSwitch" /* authentication.ValidateSuperAdminToken,*/, switches.UpdateSwitch)
+	adminEnpoint.Get("/getTrivia" /*authentication.ValidateSuperAdminToken,*/, triviafacts.GetTrivia)
+	adminEnpoint.Post("/updateArticleOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.UpdateArticleOrTrivia)
+	adminEnpoint.Get("/getArticles" /*authentication.ValidateSuperAdminToken,*/, triviafacts.GetArticles)
+	//adminEnpoint.Post("/updateArticles" /*authentication.ValidateSuperAdminToken,*/, triviafacts.UpdateArticles)
+	adminEnpoint.Post("/insertArticlesOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.InsertArticleOrTrivia)
+	adminEnpoint.Post("/deleteArticleOrTrivia" /*authentication.ValidateSuperAdminToken,*/, triviafacts.DeleteArticleOrTrivia)
+	adminEnpoint.Post("/getLogs" /*authentication.ValidateSuperAdminToken,*/, logs.GetLogs)
+	adminEnpoint.Get("/getWishLists" /*authentication.ValidateSuperAdminToken,*/, administrator.GetWishList)
 	adminEnpoint.Get("/getInstitutionAndClientCount", authentication.ValidateSuperAdminToken, administrator.GetInstiAndClientCount)
 	adminEnpoint.Put("/updateUsers/:id", authentication.ValidateSuperAdminToken, users.UpdateUser)
 
@@ -212,7 +218,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Post("/viewCardIncBranches", offices.ViewCardIncBranches)
 
 	// CARD, Inc. API's
-	cardIncEnpoint := adminEnpoint.Group("/cardinc", authentication.ValidateAdminToken)
+	cardIncEnpoint := adminEnpoint.Group("/cardinc" /*authentication.ValidateAdminToken*/)
 	// roles
 	cardIncEnpoint.Post("/addRoles/:id", admincardinc.AddUserRole)
 	cardIncEnpoint.Post("/viewRoles/:id", admincardinc.ViewUserRole)
@@ -254,7 +260,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 	cardIncEnpoint.Post("/updateCenterTagStaff", offices.UpdateCenterTagStaff)
 
 	// MLNI Tracking API's
-	mlniTrackingEnpoint := adminEnpoint.Group("/mlni", authentication.ValidateAdminToken)
+	mlniTrackingEnpoint := adminEnpoint.Group("/mlni" /*authentication.ValidateAdminToken*/)
 	// users
 	mlniTrackingEnpoint.Get("/getmlniusers/:id", adminmlni.GetMlniUsers)
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)

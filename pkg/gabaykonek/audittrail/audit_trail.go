@@ -5,7 +5,13 @@ import (
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
 
+	//"fmt"
+	//"time"
+
+	//"chatbot/pkg/sharedfunctions"
+
 	"github.com/gofiber/fiber/v2"
+	//"golang.org/x/text/cases"
 )
 
 type LogsRequest struct {
@@ -19,11 +25,12 @@ func AccessLogs(c *fiber.Ctx) error {
 	logsType := c.Get("logsType")
 
 	var logs string
-	if logsType == "0" {
+	switch logsType {
+	case "0":
 		logs = "Access Logs"
-	} else if logsType == "1" {
+	case "1":
 		logs = "System Logs"
-	} else {
+	default:
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
 			Message: status.RetCode401,
@@ -69,4 +76,36 @@ func AccessLogs(c *fiber.Ctx) error {
 			"result":   auditLogs,
 		},
 	})
+}
+
+func Access_log_trial(c *fiber.Ctx) error {
+	// Parse request body
+	params := make(map[string]any)
+	if err := c.BodyParser(&params); err != nil {
+		return c.Status(401).JSON(response.ResponseModel{
+			RetCode: "401",
+			Message: status.RetCode401,
+			Data: errors.ErrorModel{
+				IsSuccess: false,
+				Message:   "Failed to parse request.",
+				Error:     err,
+			},
+		})
+
+	}
+	params["logstype"] = c.Get("logsType")
+	// Fetch logs
+	result, err := GetLogsTrial(params)
+	if err != nil {
+		return c.Status(500).JSON(response.ResponseModel{
+			RetCode: "500",
+			Message: status.RetCode500,
+			Data: errors.ErrorModel{
+				IsSuccess: false,
+				Message:   "Failed to fetch logs.",
+				Error:     err,
+			},
+		})
+	}
+	return c.JSON(result)
 }

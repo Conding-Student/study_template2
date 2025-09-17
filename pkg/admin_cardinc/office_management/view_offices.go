@@ -31,17 +31,17 @@ func ViewCardIncBranches(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	params := make(map[string]any)
-	// if err := c.BodyParser(&params); err != nil {
-	// 	return c.Status(401).JSON(response.ResponseModel{
-	// 		RetCode: "401",
-	// 		Message: status.RetCode401,
-	// 		Data: errors.ErrorModel{
-	// 			Message:   "Failed to parse request",
-	// 			IsSuccess: false,
-	// 			Error:     err,
-	// 		},
-	// 	})
-	// }
+	if err := c.BodyParser(&params); err != nil {
+		return c.Status(401).JSON(response.ResponseModel{
+			RetCode: "401",
+			Message: status.RetCode401,
+			Data: errors.ErrorModel{
+				Message:   "Failed to parse request",
+				IsSuccess: false,
+				Error:     err,
+			},
+		})
+	}
 
 	params["cid"] = id
 	var result map[string]any

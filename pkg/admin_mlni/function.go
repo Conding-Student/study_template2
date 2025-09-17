@@ -7,15 +7,32 @@ import (
 	"fmt"
 )
 
-func GetMlniStaffInfo() ([]map[string]any, error) {
+func GetMlniStaffInfo() (map[string]any, error) {
 	db := database.DB
 
-	var cardStaffInfo []map[string]any
-	if err := db.Raw("SELECT * FROM mlnitrackingfunc.getmlnistaff()").Scan(&cardStaffInfo).Error; err != nil {
+	var cardStaffInfo map[string]any
+	if err := db.Raw("SELECT * FROM mlnitrackingfunc.getmlni_staff()").Scan(&cardStaffInfo).Error; err != nil {
 		return nil, err
 	}
 
+	sharedfunctions.ConvertStringToJSONMap(cardStaffInfo)
+	cardStaffInfo = sharedfunctions.GetMap(cardStaffInfo, "getmlni_staff")
 	return cardStaffInfo, nil
+}
+
+func UpdateMlniStaffInfo(manageUser map[string]any) (map[string]any, error) {
+	db := database.DB
+
+	var updateResult map[string]any
+	if err := db.Raw("SELECT * FROM mlnitrackingfunc.updatemlni_staff(?)", manageUser).Scan(&updateResult).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert PG JSON string into map[string]any
+	sharedfunctions.ConvertStringToJSONMap(updateResult)
+	updateResult = sharedfunctions.GetMap(updateResult, "updatemlni_staff")
+
+	return updateResult, nil
 }
 
 func ManageMlniUser(request map[string]any) (map[string]any, bool, int, string, string, string, error) {

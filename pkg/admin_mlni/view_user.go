@@ -23,9 +23,5 @@ func GetMlniUsers(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful!",
-		Data:    cardStaffInfo,
-	})
+	return c.JSON(cardStaffInfo)
 }

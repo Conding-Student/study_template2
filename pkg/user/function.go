@@ -44,3 +44,17 @@ func PinCreation(cagabayReqBody map[string]any) (map[string]any, error) {
 
 	return response, nil
 }
+
+func Insert_wishlist(params *CreateWishlistRequest) (map[string]any, error) {
+	db := database.DB
+	var result map[string]any
+
+	if err := db.Raw(`SELECT * FROM public.add_to_wishlist(?)`, params).Scan(&result).Error; err != nil {
+		return nil, err
+	}
+
+	sharedfunctions.ConvertStringToJSONMap(result)
+	result = sharedfunctions.GetMap(result, "add_to_wishlist")
+
+	return result, nil
+}
