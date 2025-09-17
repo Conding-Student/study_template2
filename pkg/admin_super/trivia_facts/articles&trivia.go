@@ -13,22 +13,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type RepoQueryParams struct {
-	ID int64 `json:"id"`
-}
 type TriviaAndArticles struct {
 	ID          int    `json:"id"`
 	Featurename string `json:"featurename"`
 	Title       string `json:"title"`
 	Content     string `json:"content"`
-	Image       string `json:"image"` // Remove form:"-" to accept JSON
+	Image       string `json:"image"`
 	Link        string `json:"link"`
 	Linktitle   string `json:"linktitle"`
 	Author      string `json:"author"`
-}
-
-type DeletionArticleTrivia struct {
-	Id int `json:"id"`
 }
 
 func GetArticles(c *fiber.Ctx) error {
@@ -247,98 +240,3 @@ func UpdateArticleOrTrivia(c *fiber.Ctx) error {
 
 	return c.JSON(result)
 }
-
-// func UpdateArticles(c *fiber.Ctx) error {
-// 	editArticles := new(EditTriviaAndArticles)
-
-// 	if err := c.BodyParser(&editArticles); err != nil {
-// 		return c.Status(401).JSON(response.ResponseModel{
-// 			RetCode: "401",
-// 			Message: status.RetCode401,
-// 			Data: errors.ErrorModel{
-// 				Message:   "Failed to parse request",
-// 				IsSuccess: false,
-// 				Error:     err,
-// 			},
-// 		})
-// 	}
-
-// 	// Call helper
-// 	result, err := Update_Articles(editArticles)
-// 	if err != nil {
-// 		return c.Status(500).JSON(response.ResponseModel{
-// 			RetCode: "500",
-// 			Message: status.RetCode500,
-// 			Data: errors.ErrorModel{
-// 				Message:   "Problem connecting to database",
-// 				IsSuccess: false,
-// 				Error:     err,
-// 			},
-// 		})
-// 	}
-
-// 	return c.JSON(result)
-// }
-
-// func GetArticles(c *fiber.Ctx) error {
-// 	db := database.DB
-
-// 	var trivia []map[string]any
-// 	if err := db.Raw("SELECT * FROM GetArticles()").Scan(&trivia).Error; err != nil {
-// 		return c.Status(500).JSON(response.ResponseModel{
-// 			RetCode: "500",
-// 			Message: "Internal server error",
-// 			Data: errors.ErrorModel{
-// 				Message:   "Failed to fetch secondary features",
-// 				IsSuccess: false,
-// 				Error:     err,
-// 			},
-// 		})
-// 	}
-
-// 	return c.Status(200).JSON(response.ResponseModel{
-// 		RetCode: "200",
-// 		Message: "Success!",
-// 		Data:    trivia,
-// 	})
-// }
-
-// func UpdateArticles(c *fiber.Ctx) error {
-// 	db := database.DB
-// 	editArticles := new(EditTriviaAndArticles)
-
-// 	if err := c.BodyParser(&editArticles); err != nil {
-// 		return c.Status(401).JSON(response.ResponseModel{
-// 			RetCode: "401",
-// 			Message: status.RetCode401,
-// 			Data: errors.ErrorModel{
-// 				Message:   "Failed to parse request",
-// 				IsSuccess: false,
-// 				Error:     err,
-// 			},
-// 		})
-// 	}
-
-// 	updateQuery := `
-// 		UPDATE public.secondary_features
-// 		SET title = ?, contents = ?, link_title = ?, link = ?, author = ?, feature_name = ?, feature_image = ?
-// 		WHERE id = ?
-// 	`
-// 	if err := db.Exec(updateQuery, editArticles.Title, editArticles.Contents, editArticles.LinkTitle, editArticles.Link, editArticles.FeatureName, editArticles.FeatureImage, editArticles.ID).Error; err != nil {
-// 		return c.Status(500).JSON(response.ResponseModel{
-// 			RetCode: "500",
-// 			Message: status.RetCode500,
-// 			Data: errors.ErrorModel{
-// 				Message:   "Failed to update article",
-// 				IsSuccess: false,
-// 				Error:     err,
-// 			},
-// 		})
-// 	}
-
-// 	return c.Status(200).JSON(response.ResponseModel{
-// 		RetCode: "200",
-// 		Message: "Success!",
-// 		Data:    editArticles,
-// 	})
-// }
