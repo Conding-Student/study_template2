@@ -28,10 +28,12 @@ import (
 	"chatbot/pkg/loancalc"
 	"chatbot/pkg/logs"
 	"chatbot/pkg/models/response"
+	"chatbot/pkg/realtime"
 	users "chatbot/pkg/user"
 	"chatbot/pkg/utils/go-utils/encryptDecrypt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 )
 
 func SetupPublicRoutes(app *fiber.App) {
@@ -187,7 +189,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 
 	// Service health check
 	v1Endpoint.Get("/", healthchecks.CheckServiceHealthB)
-	adminEnpoint := v1Endpoint.Group("/admin" /*handler.AuthMiddleware*/)
+	adminEnpoint := v1Endpoint.Group("/admin", handler.AuthMiddleware)
 	adminEnpoint.Post("/login/:id", administrator.AdminLogin)
 	adminEnpoint.Post("/logout/:id", users.Logout)
 
@@ -203,16 +205,21 @@ func SetupPublicRoutesB(app *fiber.App) {
 	// With superadmin token validation
 	adminEnpoint.Get("/serverSwitch" /*authentication.ValidateSuperAdminToken,*/, switches.GetSwitch)
 	adminEnpoint.Post("/updateSwitch" /* authentication.ValidateSuperAdminToken,*/, switches.UpdateSwitch)
-	adminEnpoint.Get("/getTrivia" /*authentication.ValidateSuperAdminToken,*/, triviafacts.GetTrivia)
-	adminEnpoint.Post("/updateArticleOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.UpdateArticleOrTrivia)
-	adminEnpoint.Get("/getArticles" /*authentication.ValidateSuperAdminToken,*/, triviafacts.GetArticles)
+	adminEnpoint.Get("/getTrivia", authentication.ValidateSuperAdminToken, triviafacts.GetTrivia)
+	adminEnpoint.Post("/updateArticleOrTrivia/:id", authentication.ValidateSuperAdminToken, triviafacts.UpdateArticleOrTrivia)
+	adminEnpoint.Get("/getArticles", authentication.ValidateSuperAdminToken, triviafacts.GetArticles)
 	//adminEnpoint.Post("/updateArticles" /*authentication.ValidateSuperAdminToken,*/, triviafacts.UpdateArticles)
-	adminEnpoint.Post("/insertArticlesOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.InsertArticleOrTrivia)
-	adminEnpoint.Post("/deleteArticleOrTrivia/:id" /*authentication.ValidateSuperAdminToken,*/, triviafacts.DeleteArticleOrTrivia)
+	adminEnpoint.Post("/insertArticlesOrTrivia/:id", authentication.ValidateSuperAdminToken, triviafacts.InsertArticleOrTrivia)
+	adminEnpoint.Post("/deleteArticleOrTrivia/:id", authentication.ValidateSuperAdminToken, triviafacts.DeleteArticleOrTrivia)
 	adminEnpoint.Post("/getLogs" /*authentication.ValidateSuperAdminToken,*/, logs.GetLogs)
 	adminEnpoint.Get("/getWishLists" /*authentication.ValidateSuperAdminToken,*/, administrator.GetWishList)
 	adminEnpoint.Get("/getInstitutionAndClientCount", authentication.ValidateSuperAdminToken, administrator.GetInstiAndClientCount)
 	adminEnpoint.Put("/updateUsers/:id", authentication.ValidateSuperAdminToken, users.UpdateUser)
+
+	// WebSocket endpoints
+	v1Endpoint.Get("/ws/articles", realtime.WSAuthMiddleware, websocket.New(realtime.ArticlesHub.HandleConnection))
+
+	v1Endpoint.Get("/ws/trivia", realtime.WSAuthMiddleware, websocket.New(realtime.TriviaHub.HandleConnection))
 
 	//old get branches endpoint used in kplus
 	adminEnpoint.Post("/viewCardIncBranches", offices.ViewCardIncBranches)

@@ -31,6 +31,45 @@ type AdminRoles struct {
 	Admin      string
 }
 
+// WebSocket-specific token validation
+func ValidateWSToken(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return c.Status(401).SendString("Missing token")
+	}
+
+	// Validate token structure and expiration
+	isValid, _, _, _, _, err := sharedfunctions.ValidateToken(token)
+	if !isValid || err != nil {
+		return c.Status(401).SendString("Invalid token")
+	}
+
+	// Decrypt and parse token claims
+	decryptedToken, err := encryptDecrypt.Decrypt(token, utils.GetEnv("SECRET_KEY"))
+	if err != nil {
+		return c.Status(401).SendString("Invalid token")
+	}
+
+	parts := strings.Split(decryptedToken, ".")
+	if len(parts) != 3 {
+		return c.Status(401).SendString("Invalid token format")
+	}
+
+	payload, _ := base64.RawURLEncoding.DecodeString(parts[1])
+	var claims JWTClaims
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return c.Status(401).SendString("Invalid token claims")
+	}
+
+	// Check expiration
+	if time.Now().Unix() > claims.Exp {
+		return c.Status(401).SendString("Token expired")
+	}
+
+	// Store claims in context for later use
+	c.Locals("wsClaims", claims)
+	return c.Next()
+}
 func ValidateSuperAdminToken(c *fiber.Ctx) error {
 	db := database.DB
 	authHeader := c.Get("Authorization")

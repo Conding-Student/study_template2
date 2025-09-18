@@ -3,6 +3,8 @@ package realtime
 import (
 	//"chatbot/pkg/authentication"
 
+	"chatbot/pkg/authentication"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
@@ -59,6 +61,30 @@ func (h *Hub) Publish(data map[string]any) {
 	h.broadcast <- data
 }
 
+// WebSocket authentication middleware
+func WSAuthMiddleware(c *fiber.Ctx) error {
+	// Check if it's a WebSocket upgrade request
+	if !websocket.IsWebSocketUpgrade(c) {
+		return fiber.ErrUpgradeRequired
+	}
+
+	// Extract token from query parameters
+	token := c.Query("token")
+	if token == "" {
+		return c.Status(401).SendString("Missing authentication token")
+	}
+
+	// Set the token in the Authorization header to reuse existing validation
+	c.Request().Header.Set("Authorization", "Bearer "+token)
+
+	// Use existing token validation middleware
+	if err := authentication.ValidateAdminToken(c); err != nil {
+		return c.Status(401).SendString("Invalid token")
+	}
+
+	return c.Next()
+}
+
 // -----------------------------------------//
 //       Create multiple hubs (topics)      //
 // -----------------------------------------//
@@ -66,7 +92,6 @@ func (h *Hub) Publish(data map[string]any) {
 var (
 	ArticlesHub = NewHub()
 	TriviaHub   = NewHub()
-	NewsHub     = NewHub()
 )
 
 // Register all WebSocket endpoints
@@ -82,8 +107,5 @@ func Register(app *fiber.App) {
 	// Each endpoint uses its own hub
 	//For non-SSL: ws://localhost:PORT/ws/articles
 	//For SSL: wss://localhost:PORT/ws/articles
-
-	app.Get("/ws/articles" /*handler.AuthMiddleware,*/, websocket.New(ArticlesHub.HandleConnection))
-	app.Get("/ws/trivia" /*handler.AuthMiddleware,*/, websocket.New(TriviaHub.HandleConnection))
 
 }
