@@ -190,13 +190,13 @@ func UpdateArticleOrTrivia(c *fiber.Ctx) error {
 		// Generate filename
 		filename := fmt.Sprintf("dashboard_image_%s_%d_%s.png", trivia.Featurename, time.Now().UnixNano(), staffID)
 
-		// Upload/Update to GitHub
+		// Update to GitHub
 		if githubURL, err := UpdateFileOnGitHub(filename, fileBytes); err == nil {
 			trivia.Image = githubURL
 		} else {
 			return c.Status(500).JSON(response.ResponseModel{
 				RetCode: "500",
-				Message: "Cannot upload/update image",
+				Message: "Cannot update image",
 				Data:    errors.ErrorModel{Message: err.Error(), IsSuccess: false, Error: err},
 			})
 		}

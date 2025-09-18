@@ -1,6 +1,8 @@
 package realtime
 
 import (
+	//"chatbot/pkg/authentication"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
@@ -81,7 +83,7 @@ func Register(app *fiber.App) {
 	//For non-SSL: ws://localhost:PORT/ws/articles
 	//For SSL: wss://localhost:PORT/ws/articles
 
-	app.Get("/ws/articles", websocket.New(ArticlesHub.HandleConnection))
-	app.Get("/ws/trivia", websocket.New(TriviaHub.HandleConnection))
-	app.Get("/ws/news", websocket.New(NewsHub.HandleConnection))
+	app.Get("/ws/articles" /*handler.AuthMiddleware,*/, websocket.New(ArticlesHub.HandleConnection))
+	app.Get("/ws/trivia" /*handler.AuthMiddleware,*/, websocket.New(TriviaHub.HandleConnection))
+
 }
