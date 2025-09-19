@@ -91,6 +91,7 @@ func broadcasting(featureName string) error {
 	case "Articles":
 		data, err = Get_Articles()
 		realtime.ArticlesHub.Publish(data)
+
 	case "Trivia Facts":
 		data, err = Get_Trivia()
 		realtime.TriviaHub.Publish(data)
