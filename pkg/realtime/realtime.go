@@ -3,7 +3,7 @@ package realtime
 import (
 	//"chatbot/pkg/authentication"
 
-	"chatbot/pkg/authentication"
+	"chatbot/pkg/sharedfunctions"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -69,17 +69,17 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 	}
 
 	// Extract token from query parameters
-	token := c.Query("token")
+	token := c.Get("token")
 	if token == "" {
 		return c.Status(401).SendString("Missing authentication token")
 	}
 
-	// Set the token in the Authorization header to reuse existing validation
-	c.Request().Header.Set("Authorization", "Bearer "+token)
-
-	// Use existing token validation middleware
-	if err := authentication.ValidateAdminToken(c); err != nil {
-		return c.Status(401).SendString("Invalid token")
+	isSuccess, _, _, _, tmessage, err := sharedfunctions.ValidateToken(token)
+	if err != nil {
+		return c.Status(401).SendString(err.Error())
+	}
+	if !isSuccess {
+		return c.Status(401).SendString(tmessage)
 	}
 
 	return c.Next()

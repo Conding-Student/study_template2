@@ -217,9 +217,9 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Put("/updateUsers/:id", authentication.ValidateSuperAdminToken, users.UpdateUser)
 
 	// WebSocket endpoints
-	v1Endpoint.Get("/ws/articles", realtime.WSAuthMiddleware, websocket.New(realtime.ArticlesHub.HandleConnection))
+	adminEnpoint.Get("/ws/articles", realtime.WSAuthMiddleware, websocket.New(realtime.ArticlesHub.HandleConnection))
 
-	v1Endpoint.Get("/ws/trivia", realtime.WSAuthMiddleware, websocket.New(realtime.TriviaHub.HandleConnection))
+	adminEnpoint.Get("/ws/trivia", realtime.WSAuthMiddleware, websocket.New(realtime.TriviaHub.HandleConnection))
 
 	//old get branches endpoint used in kplus
 	adminEnpoint.Post("/viewCardIncBranches", offices.ViewCardIncBranches)
