@@ -92,6 +92,15 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 var (
 	ArticlesHub = NewHub()
 	TriviaHub   = NewHub()
+	//offices management
+	UpsertCentersHub = NewHub()
+	UpsertClusterHub = NewHub()
+	UpsertRegionHub  = NewHub()
+	UpsertUnitsHub   = NewHub()
+	//Mlni user management
+	MlniStaffHub = NewHub()
+	//logs
+	CagabayLogsHub = NewHub()
 )
 
 // Register all WebSocket endpoints

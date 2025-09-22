@@ -4,8 +4,10 @@ import (
 	// "chatbot/pkg/models/errors"
 	// "chatbot/pkg/models/response"
 	// "chatbot/pkg/models/status"
+	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
+	"strings"
 )
 
 // center
@@ -37,8 +39,27 @@ func Upsert_Center(params *UpsertCentersParams) (map[string]any, error) {
 	// Convert JSON string fields to map if needed
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "upsert_centers") // same as Get_Center
+	message := sharedfunctions.GetStringFromMap(result, "message")
 
+	//broadcasting
+	handleMessage(message, result)
 	return result, nil
+}
+
+func handleMessage(message string, result map[string]any) {
+	hubs := map[string]func(map[string]any){
+		"Center":  realtime.UpsertCentersHub.Publish,
+		"Cluster": realtime.UpsertClusterHub.Publish,
+		"Region":  realtime.UpsertRegionHub.Publish,
+		"Unit":    realtime.UpsertUnitsHub.Publish,
+	}
+
+	for prefix, publish := range hubs {
+		if strings.HasPrefix(message, prefix+" successfully") {
+			publish(result)
+			return
+		}
+	}
 }
 
 // cluster
@@ -69,6 +90,9 @@ func Upsert_Cluster(params *UpsertClusterParams) (map[string]any, error) {
 
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "upsert_cluster")
+	message := sharedfunctions.GetStringFromMap(result, "message")
+	//broadcasting
+	handleMessage(message, result)
 
 	return result, nil
 }
@@ -101,7 +125,9 @@ func Upsert_Region(params *UpsertRegionParams) (map[string]any, error) {
 	// Convert and unwrap JSON result
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "upsert_region")
-
+	message := sharedfunctions.GetStringFromMap(result, "message")
+	//broadcasting
+	handleMessage(message, result)
 	return result, nil
 }
 
@@ -132,7 +158,9 @@ func Upsert_Units(params *UpsertUnitsParams) (map[string]any, error) {
 	// Convert and unwrap JSON result
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "upsert_units")
-
+	message := sharedfunctions.GetStringFromMap(result, "message")
+	//broadcasting
+	handleMessage(message, result)
 	return result, nil
 }
 

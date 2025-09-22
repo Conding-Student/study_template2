@@ -4,6 +4,7 @@ import (
 	"chatbot/pkg/models/errors"
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
+	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,25 +31,21 @@ func UpdateUsers(c *fiber.Ctx) error {
 		})
 	}
 
-	result, message, err := sharedfunctions.UpdateUser(adminAccess, request.RequestData)
+	result, err := sharedfunctions.UpdateUser(adminAccess, request.RequestData)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
 			Message: status.RetCode500,
 			Data: errors.ErrorModel{
-				Message:   message,
+				Message:   "Error updating user due to a problem connecting to database!",
 				IsSuccess: false,
 				Error:     err,
 			},
 		})
 	}
-
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful!",
-		Data: fiber.Map{
-			"Request": request,
-			"Result":  result,
-		},
-	})
+	message := sharedfunctions.GetStringFromMap(result, "retCode")
+	if message == "200" {
+		realtime.MlniStaffHub.Publish(result)
+	}
+	return c.JSON(result)
 }

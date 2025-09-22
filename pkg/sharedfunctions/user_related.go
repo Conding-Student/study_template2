@@ -100,28 +100,20 @@ func FetchUserEmail(staffId string) (string, error) {
 	return email, nil
 }
 
-func UpdateUser(access string, request map[string]any) (map[string]any, string, error) {
+func UpdateUser(access string, request map[string]any) (map[string]any, error) {
 	db := database.DB
 
 	var result map[string]any
-	if err := db.Raw("SELECT * FROM public.updateuser($1, $2)", access, request).Scan(&result).Error; err != nil {
+	if err := db.Raw("SELECT * FROM public.update_user($1, $2)AS update_user", access, request).Scan(&result).Error; err != nil {
 		fmt.Println(err)
-		return nil, "Error updating user due to a problem connecting to database!", err
+		return nil, err
 	}
+	// Convert JSON string fields to proper JSON
+	ConvertStringToJSONMap(result)
 
-	isSuccess := GetBoolFromMap(result, "issuccess")
-	responseMessage := GetStringFromMap(result, "message")
+	results := GetMap(result, "update_user")
 
-	if !isSuccess {
-		return nil, responseMessage, fmt.Errorf("error updating user due to a problem connecting to database")
-	}
-
-	fmt.Println("--------------------------------------------------------------------------------------------------")
-	fmt.Println("\nSuccessfull designation update: ", isSuccess)
-	fmt.Println("Message: ", responseMessage)
-	fmt.Println("\n------------------------------------------------------------------------------------------------")
-
-	return result, responseMessage, nil
+	return results, nil
 }
 
 func GetAllUsers() (map[string]any, error) {

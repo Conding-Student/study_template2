@@ -2,11 +2,18 @@ package adminmlni
 
 import (
 	"chatbot/pkg/models/status"
+	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
 	"fmt"
+	//"strings"
 )
 
+func handleMessage(message string, get map[string]any) {
+	if message == "Successful!" {
+		realtime.MlniStaffHub.Publish(get)
+	}
+}
 func GetMlniStaffInfo() (map[string]any, error) {
 	db := database.DB
 
@@ -31,7 +38,9 @@ func UpdateMlniStaffInfo(manageUser map[string]any) (map[string]any, error) {
 	// Convert PG JSON string into map[string]any
 	sharedfunctions.ConvertStringToJSONMap(updateResult)
 	updateResult = sharedfunctions.GetMap(updateResult, "updatemlni_staff")
-
+	message := sharedfunctions.GetStringFromMap(updateResult, "message")
+	//broadcasting
+	handleMessage(message, updateResult)
 	return updateResult, nil
 }
 

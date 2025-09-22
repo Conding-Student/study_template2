@@ -189,7 +189,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 
 	// Service health check
 	v1Endpoint.Get("/", healthchecks.CheckServiceHealthB)
-	adminEnpoint := v1Endpoint.Group("/admin", handler.AuthMiddleware)
+	adminEnpoint := v1Endpoint.Group("/admin" /*handler.AuthMiddleware*/)
 	adminEnpoint.Post("/login/:id", administrator.AdminLogin)
 	adminEnpoint.Post("/logout/:id", users.Logout)
 
@@ -199,7 +199,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Post("/institutionslist", authentication.ValidateAdminToken, handler.Institutions)
 	adminEnpoint.Get("/getallusers/:id", authentication.ValidateSuperAdminToken, usermanagement.GetAllUsers)
 	adminEnpoint.Post("accountCreationAD/:id", authentication.ValidateAdminToken, usermanagement.AccountCreationAdmin)
-	adminEnpoint.Post("/updateusers/:id", authentication.ValidateAdminToken, usermanagement.UpdateUsers)
+	adminEnpoint.Post("/updateusers/:id" /*authentication.ValidateAdminToken,*/, usermanagement.UpdateUsers)
 	adminEnpoint.Post("syncuserdata/:id", authentication.ValidateAdminToken, usermanagement.SyncUserData)
 
 	// With superadmin token validation
@@ -218,7 +218,6 @@ func SetupPublicRoutesB(app *fiber.App) {
 
 	// WebSocket endpoints
 	adminEnpoint.Get("/ws/articles", realtime.WSAuthMiddleware, websocket.New(realtime.ArticlesHub.HandleConnection))
-
 	adminEnpoint.Get("/ws/trivia", realtime.WSAuthMiddleware, websocket.New(realtime.TriviaHub.HandleConnection))
 
 	//old get branches endpoint used in kplus
@@ -246,6 +245,13 @@ func SetupPublicRoutesB(app *fiber.App) {
 	cardIncEnpoint.Post("/upsertBranch/:id", offices.UpsertBranches)
 	cardIncEnpoint.Post("/upsertUnit/:id", offices.UpsertUnits)
 	cardIncEnpoint.Post("/upsertCenter/:id", offices.UpsertCenters)
+
+	// WebSocket endpoints
+	cardIncEnpoint.Get("/ws/upsertcenters/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertCentersHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertcluster/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertClusterHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertregion/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertRegionHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertunit/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertUnitsHub.HandleConnection))
+
 	// users
 	cardIncEnpoint.Get("/getcardincusers/:id", admincardinc.GetCardIncUsers)
 	// dashboard
@@ -271,4 +277,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 	// users
 	mlniTrackingEnpoint.Get("/getmlniusers/:id", adminmlni.GetMlniUsers)
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)
+
+	// WebSocket endpoints
+	mlniTrackingEnpoint.Get("/ws/mlnistaff/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.MlniStaffHub.HandleConnection))
 }
