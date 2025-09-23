@@ -1,9 +1,8 @@
 package realtime
 
 import (
-	//"chatbot/pkg/authentication"
-
 	"chatbot/pkg/sharedfunctions"
+	"net/url"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -63,18 +62,28 @@ func (h *Hub) Publish(data map[string]any) {
 
 // WebSocket authentication middleware
 func WSAuthMiddleware(c *fiber.Ctx) error {
-	// Check if it's a WebSocket upgrade request
+	// Ensure it's a WebSocket upgrade request
 	if !websocket.IsWebSocketUpgrade(c) {
 		return fiber.ErrUpgradeRequired
 	}
 
-	// Extract token from query parameters
-	token := c.Get("token")
-	if token == "" {
+	// Extract token from query string (?token=123)
+	token := c.Query("token")
+
+	safeToken := url.QueryEscape(token)
+	// Fix "+" being converted to spaces
+	//token = strings.ReplaceAll(token, " ", "+")
+	decodedToken, err := url.QueryUnescape(safeToken)
+	if err != nil {
+		return c.Status(400).SendString("Invalid token encoding")
+	}
+
+	if safeToken == "" {
 		return c.Status(401).SendString("Missing authentication token")
 	}
 
-	isSuccess, _, _, _, tmessage, err := sharedfunctions.ValidateToken(token)
+	isSuccess, _, _, _, tmessage, err := sharedfunctions.ValidateToken(decodedToken)
+
 	if err != nil {
 		return c.Status(401).SendString(err.Error())
 	}
@@ -102,6 +111,10 @@ var (
 	//logs
 	CagabayLogsHub = NewHub()
 )
+
+// func NotifyLoanUpdate(staffID string)
+// { mu.Lock() conns := staffListeners[staffID] mu.Unlock() if len(conns) == 0 { return }
+// // Get latest data data, _, _, _, _, _, err := GetAllLoans(staffID) if err != nil { return } loans := sharedfunctions.GetListAny(data, "data") // Send to all connected clients of that staffID for _, conn := range conns { conn.WriteJSON(fiber.Map{ "type": staffID, // e.g. "201008-03206" "data": loans, }) } }
 
 // Register all WebSocket endpoints
 func Register(app *fiber.App) {

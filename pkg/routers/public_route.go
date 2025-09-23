@@ -247,10 +247,10 @@ func SetupPublicRoutesB(app *fiber.App) {
 	cardIncEnpoint.Post("/upsertCenter/:id", offices.UpsertCenters)
 
 	// WebSocket endpoints
-	cardIncEnpoint.Get("/ws/upsertcenters/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertCentersHub.HandleConnection))
-	cardIncEnpoint.Get("/ws/upsertcluster/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertClusterHub.HandleConnection))
-	cardIncEnpoint.Get("/ws/upsertregion/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertRegionHub.HandleConnection))
-	cardIncEnpoint.Get("/ws/upsertunit/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.UpsertUnitsHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertcenters/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertCentersHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertcluster/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertClusterHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertregion/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertRegionHub.HandleConnection))
+	cardIncEnpoint.Get("/ws/upsertunit/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertUnitsHub.HandleConnection))
 
 	// users
 	cardIncEnpoint.Get("/getcardincusers/:id", admincardinc.GetCardIncUsers)
@@ -279,5 +279,5 @@ func SetupPublicRoutesB(app *fiber.App) {
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)
 
 	// WebSocket endpoints
-	mlniTrackingEnpoint.Get("/ws/mlnistaff/:id" /*realtime.WSAuthMiddleware,*/, websocket.New(realtime.MlniStaffHub.HandleConnection))
+	mlniTrackingEnpoint.Get("/ws/mlnistaff/:id", realtime.WSAuthMiddleware, websocket.New(realtime.MlniStaffHub.HandleConnection))
 }
