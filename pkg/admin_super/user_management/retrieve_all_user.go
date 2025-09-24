@@ -10,7 +10,7 @@ import (
 )
 
 func GetAllUsers(c *fiber.Ctx) error {
-
+	//staffid := c.Params("id") // optional for logging
 	allUser, err := sharedfunctions.GetAllUsers()
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{

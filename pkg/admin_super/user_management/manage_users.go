@@ -4,6 +4,7 @@ import (
 	"chatbot/pkg/models/errors"
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
+	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,7 +16,7 @@ type Request struct {
 
 func UpdateUsers(c *fiber.Ctx) error {
 	adminAccess := c.Get("adminAccess")
-
+	staffid := c.Params("id") // optional for logging
 	request := new(Request)
 
 	if err := c.BodyParser(&request); err != nil {
@@ -42,5 +43,12 @@ func UpdateUsers(c *fiber.Ctx) error {
 			},
 		})
 	}
+
+	if allUser, err := sharedfunctions.GetAllUsers(); err == nil {
+		sharedfunctions.ConvertStringToJSONMap(allUser)
+		allUsers := sharedfunctions.GetList(allUser, "getalluser")
+		realtime.MainHub.Publish(staffid, "get_allusers", allUsers)
+	}
+
 	return c.JSON(result)
 }

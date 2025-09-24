@@ -196,7 +196,7 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Post("/register", practice.Admin_practice_creation)
 
 	adminEnpoint.Post("/institutionslist", authentication.ValidateAdminToken, handler.Institutions)
-	adminEnpoint.Get("/getallusers/:id", authentication.ValidateSuperAdminToken, usermanagement.GetAllUsers)
+	adminEnpoint.Get("/getallusers/:id" /*authentication.ValidateSuperAdminToken,*/, usermanagement.GetAllUsers)
 	adminEnpoint.Post("accountCreationAD/:id", authentication.ValidateAdminToken, usermanagement.AccountCreationAdmin)
 	adminEnpoint.Post("/updateusers/:id" /*authentication.ValidateAdminToken,*/, usermanagement.UpdateUsers)
 	adminEnpoint.Post("syncuserdata/:id", authentication.ValidateAdminToken, usermanagement.SyncUserData)
