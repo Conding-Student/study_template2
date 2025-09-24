@@ -64,9 +64,10 @@ type UpsertCentersParams struct {
 }
 
 func UpsertCenters(c *fiber.Ctx) error {
-	staffID := c.Params("id") // Optional, used in logs
+	staffid := c.Params("id") // Optional, used in logs
 
 	upsertParameters := new(UpsertCentersParams)
+	params_select := new(SelectCentersParams)
 	if err := c.BodyParser(upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
@@ -80,7 +81,7 @@ func UpsertCenters(c *fiber.Ctx) error {
 	}
 
 	// Delegate to SQL function
-	result, err := Upsert_Center(upsertParameters)
+	result, err := Upsert_Center(staffid, upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -97,7 +98,7 @@ func UpsertCenters(c *fiber.Ctx) error {
 	retCode := sharedfunctions.GetStringFromMap(result, "retCode")
 	msg := sharedfunctions.GetStringFromMap(result, "message")
 
-	logs.LOSLogs(c, GetCenterModule, staffID, retCode, msg)
+	logs.LOSLogs(c, GetCenterModule, staffid, retCode, msg)
 
 	return c.JSON(result)
 }

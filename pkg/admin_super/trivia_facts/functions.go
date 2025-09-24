@@ -35,7 +35,7 @@ func Get_Trivia() (map[string]any, error) {
 	return result, nil
 }
 
-func Update_ArticlesOrTrivia(params *TriviaAndArticles) (map[string]any, error) {
+func Update_ArticlesOrTrivia(satffid string, params *TriviaAndArticles) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -45,14 +45,14 @@ func Update_ArticlesOrTrivia(params *TriviaAndArticles) (map[string]any, error) 
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "update_secondary_feature")
 
-	if err := broadcasting(params.Featurename); err != nil {
+	if err := broadcasting(satffid, params.Featurename); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-func Delete_triviaorfacts(params *TriviaAndArticles) (map[string]any, error) {
+func Delete_triviaorfacts(staffid string, params *TriviaAndArticles) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 	// Delete via Postgres function
@@ -62,14 +62,14 @@ func Delete_triviaorfacts(params *TriviaAndArticles) (map[string]any, error) {
 
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "delete_triviaorfatcs")
-	if err := broadcasting(params.Featurename); err != nil {
+	if err := broadcasting(staffid, params.Featurename); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
 // inserting articel function
-func Insert_ArticleOrTrivia(params *TriviaAndArticles) (map[string]any, error) {
+func Insert_ArticleOrTrivia(staffid string, params *TriviaAndArticles) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -81,7 +81,7 @@ func Insert_ArticleOrTrivia(params *TriviaAndArticles) (map[string]any, error) {
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "insert_article")
 
-	if err := broadcasting(params.Featurename); err != nil {
+	if err := broadcasting(staffid, params.Featurename); err != nil {
 		return nil, err
 	}
 

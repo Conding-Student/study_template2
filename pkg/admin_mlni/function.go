@@ -9,9 +9,9 @@ import (
 	//"strings"
 )
 
-func handleMessage(message string, get map[string]any) {
+func handleMessage(staffid string, message string, get map[string]any) {
 	if message == "Successful!" {
-		realtime.MlniStaffHub.Publish(get)
+		realtime.MainHub.Publish(staffid, "", get)
 	}
 }
 func GetMlniStaffInfo() (map[string]any, error) {
@@ -38,9 +38,7 @@ func UpdateMlniStaffInfo(manageUser map[string]any) (map[string]any, error) {
 	// Convert PG JSON string into map[string]any
 	sharedfunctions.ConvertStringToJSONMap(updateResult)
 	updateResult = sharedfunctions.GetMap(updateResult, "updatemlni_staff")
-	message := sharedfunctions.GetStringFromMap(updateResult, "message")
-	//broadcasting
-	handleMessage(message, updateResult)
+
 	return updateResult, nil
 }
 

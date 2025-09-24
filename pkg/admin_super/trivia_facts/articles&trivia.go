@@ -120,7 +120,7 @@ func InsertArticleOrTrivia(c *fiber.Ctx) error {
 	}
 
 	// Save to DB
-	result, err := Insert_ArticleOrTrivia(article)
+	result, err := Insert_ArticleOrTrivia(staffID, article)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -134,7 +134,7 @@ func InsertArticleOrTrivia(c *fiber.Ctx) error {
 
 // DeleteArticleOrTrivia handles delete request
 func DeleteArticleOrTrivia(c *fiber.Ctx) error {
-	//staffID := c.Params("id")
+	staffID := c.Params("id")
 	params := new(TriviaAndArticles)
 
 	if err := c.BodyParser(&params); err != nil {
@@ -163,7 +163,7 @@ func DeleteArticleOrTrivia(c *fiber.Ctx) error {
 		}
 	}
 
-	resultDB, err := Delete_triviaorfacts(params)
+	resultDB, err := Delete_triviaorfacts(staffID, params)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500", Message: status.RetCode500,
@@ -255,7 +255,7 @@ func UpdateArticleOrTrivia(c *fiber.Ctx) error {
 	}
 
 	// Call DB update function
-	result, err := Update_ArticlesOrTrivia(trivia)
+	result, err := Update_ArticlesOrTrivia(staffID, trivia)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

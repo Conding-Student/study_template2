@@ -5,6 +5,7 @@ import (
 	"chatbot/pkg/models/errors"
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
+
 	"chatbot/pkg/sharedfunctions"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +25,7 @@ type UpsertClusterParams struct {
 var GetClustersModule = "Clusters Module"
 
 func GetClusters(c *fiber.Ctx) error {
-	staffID := c.Params("id") // optional for logging
+	staffid := c.Params("id") // optional for logging
 
 	// Delegate to query function
 	result, err := Get_Clusters()
@@ -42,14 +43,13 @@ func GetClusters(c *fiber.Ctx) error {
 
 	retCode := sharedfunctions.GetStringFromMap(result, "retCode")
 	message := sharedfunctions.GetStringFromMap(result, "message")
-
 	// Log operation
-	logs.LOSLogs(c, GetClustersModule, staffID, retCode, message)
+	logs.LOSLogs(c, GetClustersModule, staffid, retCode, message)
 
 	return c.JSON(result)
 }
 func UpsertCluster(c *fiber.Ctx) error {
-	staffID := c.Params("id") // optional for logging
+	staffid := c.Params("id") // optional for logging
 	upsertParameters := new(UpsertClusterParams)
 	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
@@ -63,7 +63,7 @@ func UpsertCluster(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Cluster(upsertParameters)
+	result, err := Upsert_Cluster(staffid, upsertParameters)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -79,7 +79,7 @@ func UpsertCluster(c *fiber.Ctx) error {
 	message := sharedfunctions.GetStringFromMap(result, "message")
 
 	// Log operation
-	logs.LOSLogs(c, GetClustersModule, staffID, retCode, message)
+	logs.LOSLogs(c, GetClustersModule, staffid, retCode, message)
 	return c.JSON(result)
 }
 

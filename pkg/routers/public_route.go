@@ -28,12 +28,11 @@ import (
 	"chatbot/pkg/loancalc"
 	"chatbot/pkg/logs"
 	"chatbot/pkg/models/response"
-	"chatbot/pkg/realtime"
+
 	users "chatbot/pkg/user"
 	"chatbot/pkg/utils/go-utils/encryptDecrypt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/websocket/v2"
 )
 
 func SetupPublicRoutes(app *fiber.App) {
@@ -216,10 +215,6 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Get("/getInstitutionAndClientCount", authentication.ValidateSuperAdminToken, administrator.GetInstiAndClientCount)
 	adminEnpoint.Put("/updateUsers/:id", authentication.ValidateSuperAdminToken, users.UpdateUser)
 
-	// WebSocket endpoints
-	adminEnpoint.Get("/ws/articles", realtime.WSAuthMiddleware, websocket.New(realtime.ArticlesHub.HandleConnection))
-	adminEnpoint.Get("/ws/trivia", realtime.WSAuthMiddleware, websocket.New(realtime.TriviaHub.HandleConnection))
-
 	//old get branches endpoint used in kplus
 	adminEnpoint.Post("/viewCardIncBranches", offices.ViewCardIncBranches)
 
@@ -245,12 +240,6 @@ func SetupPublicRoutesB(app *fiber.App) {
 	cardIncEnpoint.Post("/upsertBranch/:id", offices.UpsertBranches)
 	cardIncEnpoint.Post("/upsertUnit/:id", offices.UpsertUnits)
 	cardIncEnpoint.Post("/upsertCenter/:id", offices.UpsertCenters)
-
-	// WebSocket endpoints
-	cardIncEnpoint.Get("/ws/upsertcenters/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertCentersHub.HandleConnection))
-	cardIncEnpoint.Get("/ws/upsertcluster/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertClusterHub.HandleConnection))
-	cardIncEnpoint.Get("/ws/upsertregion/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertRegionHub.HandleConnection))
-	cardIncEnpoint.Get("/ws/upsertunit/:id", realtime.WSAuthMiddleware, websocket.New(realtime.UpsertUnitsHub.HandleConnection))
 
 	// users
 	cardIncEnpoint.Get("/getcardincusers/:id", admincardinc.GetCardIncUsers)
@@ -279,5 +268,5 @@ func SetupPublicRoutesB(app *fiber.App) {
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)
 
 	// WebSocket endpoints
-	mlniTrackingEnpoint.Get("/ws/mlnistaff/:id", realtime.WSAuthMiddleware, websocket.New(realtime.MlniStaffHub.HandleConnection))
+
 }

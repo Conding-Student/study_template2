@@ -83,18 +83,18 @@ func getFileSHA(url, token string) (string, error) {
 
 	return fileInfo.SHA, nil
 }
-func broadcasting(featureName string) error {
+func broadcasting(id string, featureName string) error {
 	var data map[string]any
 	var err error
 
 	switch featureName {
 	case "Articles":
 		data, err = Get_Articles()
-		realtime.ArticlesHub.Publish(data)
+		realtime.MainHub.Publish(id, "get_articles", data)
 
 	case "Trivia Facts":
 		data, err = Get_Trivia()
-		realtime.TriviaHub.Publish(data)
+		realtime.MainHub.Publish(id, "get_trivia", data)
 	default:
 		return nil
 	}

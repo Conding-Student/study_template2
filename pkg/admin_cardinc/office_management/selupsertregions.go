@@ -11,7 +11,7 @@ import (
 )
 
 type SelectRegionsParams struct {
-	SelectOption int    `json:"selectoption"`
+	SelectOption int    `json:"operation"`
 	Cluster      string `json:"cluster"`
 }
 
@@ -60,8 +60,9 @@ type UpsertRegionParams struct {
 }
 
 func UpsertRegion(c *fiber.Ctx) error {
-	staffID := c.Params("id")
+	staffid := c.Params("id")
 	upsertParameters := new(UpsertRegionParams)
+	selectparameters := new(SelectRegionsParams)
 	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
@@ -74,7 +75,7 @@ func UpsertRegion(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Region(upsertParameters)
+	result, err := Upsert_Region(staffid, upsertParameters, selectparameters)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -90,7 +91,7 @@ func UpsertRegion(c *fiber.Ctx) error {
 	message := sharedfunctions.GetStringFromMap(result, "message")
 
 	// Log operation
-	logs.LOSLogs(c, GetRegionModule, staffID, retCode, message)
+	logs.LOSLogs(c, GetRegionModule, staffid, retCode, message)
 	return c.JSON(result)
 }
 

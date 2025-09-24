@@ -4,7 +4,6 @@ import (
 	"chatbot/pkg/models/errors"
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
-	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 
 	"github.com/gofiber/fiber/v2"
@@ -42,10 +41,6 @@ func UpdateUsers(c *fiber.Ctx) error {
 				Error:     err,
 			},
 		})
-	}
-	message := sharedfunctions.GetStringFromMap(result, "retCode")
-	if message == "200" {
-		realtime.MlniStaffHub.Publish(result)
 	}
 	return c.JSON(result)
 }
