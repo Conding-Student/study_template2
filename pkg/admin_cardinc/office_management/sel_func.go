@@ -1,20 +1,16 @@
 package offices
 
 import (
-	// "chatbot/pkg/models/errors"
-	// "chatbot/pkg/models/response"
-	// "chatbot/pkg/models/status"
 	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
-	"fmt"
 )
 
 // branches
-func Get_Branch(params *SelectBranchesParams) (map[string]any, error) {
+func Get_Branch(params map[string]any) (map[string]any, error) {
 	db := database.DB
-	var result map[string]any
 
+	var result map[string]any
 	// Now driver will marshal params -> JSON automatically
 	if err := db.Raw(`SELECT cardincoffices.get_branches(?)`, params).Scan(&result).Error; err != nil {
 		return nil, err
@@ -84,9 +80,6 @@ func Get_Region(params *SelectRegionsParams) (map[string]any, error) {
 func Get_Units(params *SelectUnitsParams) (map[string]any, error) {
 	db := database.DB
 
-	fmt.Println("Params after DB call:", params.Operation) // Debugging line
-	fmt.Println("Params after DB call:", params.Brcode)    // Debugging line
-
 	var result map[string]any
 	// Now driver will marshal params -> JSON automatically
 	if err := db.Raw("SELECT * FROM gabaykonekfunc.officesgetunits($1)", params).Scan(&result).Error; err != nil {
@@ -99,7 +92,7 @@ func Get_Units(params *SelectUnitsParams) (map[string]any, error) {
 	return result, nil
 }
 
-func Upsert_Branch(staffid string, params *UpsertBranchesParams, params_select *SelectBranchesParams) (map[string]any, error) {
+func Upsert_Branch(staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -113,8 +106,8 @@ func Upsert_Branch(staffid string, params *UpsertBranchesParams, params_select *
 	result = sharedfunctions.GetMap(result, "upsertbranches") // same as Get_Center
 	message := sharedfunctions.GetStringFromMap(result, "retCode")
 
-	params_select.Operation = 1 // to fetch all branches
-	params_select.Region = params.Region
+	params_select["operation"] = 1 // to fetch all branches
+	params_select["region"] = params["Region"]
 
 	if clusters, err := Get_Branch(params_select); err == nil {
 		handleMessage("Branch", staffid, message, clusters)
@@ -280,19 +273,19 @@ func handleMessage(functionName string, staffid string, message string, result a
 	if message == "200" {
 		hubs := map[string]func(any){
 			"Center": func(data any) {
-				realtime.MainHub.Publish(staffid, "get_center", data)
+				realtime.MainHub.Publish("ToAll", "get_center", data)
 			},
 			"Cluster": func(data any) {
-				realtime.MainHub.Publish(staffid, "get_cluster", data)
+				realtime.MainHub.Publish("ToAll", "get_cluster", data)
 			},
 			"Region": func(data any) {
-				realtime.MainHub.Publish(staffid, "get_region", data)
+				realtime.MainHub.Publish("ToAll", "get_region", data)
 			},
 			"Unit": func(data any) {
-				realtime.MainHub.Publish(staffid, "get_unit", data)
+				realtime.MainHub.Publish("ToAll", "get_unit", data)
 			},
 			"Branch": func(data any) {
-				realtime.MainHub.Publish(staffid, "get_branch", data)
+				realtime.MainHub.Publish("ToAll", "get_branch", data)
 			},
 		}
 		// Only call the function that matches functionName

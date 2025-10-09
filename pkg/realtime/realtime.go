@@ -2,6 +2,8 @@ package realtime
 
 import (
 	"chatbot/pkg/sharedfunctions"
+	"encoding/json"
+	"log"
 	"net/url"
 	"strings"
 	"sync"
@@ -10,44 +12,97 @@ import (
 	"github.com/gofiber/websocket/v2"
 )
 
-// Hub manages websocket groups by feature (with room for id expansion)
-type Hub struct {
-	groups map[string]map[string]map[*websocket.Conn]bool // feature -> id -> clients
+//
+// ========== HUB DESIGN ==========
+//
+
+type WSClient struct {
+	Conn *websocket.Conn
+	Send chan []byte
+}
+
+// FeatureConnections manages connections for one "feature"
+type FeatureConnections struct {
+	groups map[string]map[*WSClient]bool // id -> connections
 	mu     sync.RWMutex
 }
 
-// NewHub creates a new Hub
-func NewHub() *Hub {
-	return &Hub{
-		groups: make(map[string]map[string]map[*websocket.Conn]bool),
+// FeatureList is the global manager holding all features and their connections
+type FeatureList struct {
+	items map[string]*FeatureConnections // feature name -> FeatureConnections
+	mu    sync.RWMutex                   // lock for accessing features map
+}
+
+// NewFeatureList creates a new feature list with an empty map
+func NewFeatureList() *FeatureList {
+	return &FeatureList{
+		items: make(map[string]*FeatureConnections),
 	}
 }
 
-// HandleConnection registers a client under feature (+id for possible expansion)
-func (h *Hub) HandleConnection(c *websocket.Conn, id string, feature string) {
-	h.mu.Lock()
-	if _, ok := h.groups[feature]; !ok {
-		h.groups[feature] = make(map[string]map[*websocket.Conn]bool)
-	}
-	if _, ok := h.groups[feature][id]; !ok {
-		h.groups[feature][id] = make(map[*websocket.Conn]bool)
-	}
-	h.groups[feature][id][c] = true
-	h.mu.Unlock()
+// returns a feature, creating it if needed
+func (fl *FeatureList) getOrCreateFeatureconn(feature string) *FeatureConnections {
+	fl.mu.Lock()
+	defer fl.mu.Unlock() //unlock after checking/creating
 
+	if _, ok := fl.items[feature]; !ok {
+		fl.items[feature] = &FeatureConnections{
+			groups: make(map[string]map[*WSClient]bool),
+		}
+		log.Printf("[INIT] Created new connection under specific feature: %s", feature)
+	}
+	return fl.items[feature]
+}
+
+//
+// ========== CONNECTION MANAGEMENT ==========
+//
+
+// HandleConnection registers a connection under a feature + id
+func (h *FeatureList) HandleConnection(c *websocket.Conn, id, feature string) {
+	featureConn := h.getOrCreateFeatureconn(feature)
+
+	client := &WSClient{
+		Conn: c,
+		Send: make(chan []byte, 100), // buffered queue per client
+	}
+
+	// Register safely
+	featureConn.mu.Lock()
+	if _, ok := featureConn.groups[id]; !ok {
+		featureConn.groups[id] = make(map[*WSClient]bool)
+	}
+	featureConn.groups[id][client] = true
+	totalIDs := len(featureConn.groups)
+	featureConn.mu.Unlock()
+
+	log.Printf("[CONNECT] Feature=%s | ID=%s | Total IDs=%d", feature, id, totalIDs)
+
+	// Start writer goroutine
+	go func(cl *WSClient) {
+		for msg := range cl.Send {
+			if err := cl.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				log.Printf("[WRITE ERR] Closing client: %v", err)
+				cl.Conn.Close()
+				break
+			}
+		}
+	}(client)
+
+	// Cleanup on disconnect
 	defer func() {
-		h.mu.Lock()
-		delete(h.groups[feature][id], c)
-		if len(h.groups[feature][id]) == 0 {
-			delete(h.groups[feature], id)
+		featureConn.mu.Lock()
+		delete(featureConn.groups[id], client)
+		if len(featureConn.groups[id]) == 0 {
+			delete(featureConn.groups, id)
 		}
-		if len(h.groups[feature]) == 0 {
-			delete(h.groups, feature)
-		}
-		h.mu.Unlock()
+		featureConn.mu.Unlock()
+		close(client.Send)
 		c.Close()
+		log.Printf("[DISCONNECT] Feature=%s | ID=%s | Remaining IDs=%d", feature, id, len(featureConn.groups))
 	}()
 
+	// Keep alive
 	for {
 		if _, _, err := c.ReadMessage(); err != nil {
 			break
@@ -55,44 +110,52 @@ func (h *Hub) HandleConnection(c *websocket.Conn, id string, feature string) {
 	}
 }
 
-// Publish sends data to all clients subscribed to a feature
-// Later: can extend this to also filter by id
-// Publish sends data to all clients subscribed to a feature (ignores id for now)
-func (h *Hub) Publish(id string, feature string, data any) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+//
+// ========== MESSAGE BROADCAST ==========
+//
 
-	if ids, ok := h.groups[feature]; ok {
-		for staffID, clients := range ids {
-			for conn := range clients {
-				if err := conn.WriteJSON(data); err != nil {
-					// 🚨 Dead connection: cleanup immediately
-					conn.Close()
-					delete(clients, conn)
+// Publish sends data to all clients in a feature (optionally filtered by id)
+func (h *FeatureList) Publish(id string, feature string, data any) {
+	fetchfeatured := h.getOrCreateFeatureconn(feature)
+
+	// Marshal message once
+	msg, _ := json.Marshal(data)
+
+	fetchfeatured.mu.RLock()
+	defer fetchfeatured.mu.RUnlock()
+
+	if id == "ToAll" {
+		for _, clients := range fetchfeatured.groups {
+			for client := range clients {
+				select {
+				case client.Send <- msg:
+				default:
+					log.Printf("[DROP] Queue full for %v", client.Conn.RemoteAddr())
 				}
 			}
-
-			// If no clients left for this staffID, clean it up
-			if len(clients) == 0 {
-				delete(ids, staffID)
-			}
 		}
-
-		// If no IDs left under this feature, clean it up
-		if len(ids) == 0 {
-			delete(h.groups, feature)
+	} else if clients, ok := fetchfeatured.groups[id]; ok {
+		for client := range clients {
+			select {
+			case client.Send <- msg:
+			default:
+				log.Printf("[DROP] Queue full for %v", client.Conn.RemoteAddr())
+			}
 		}
 	}
 }
 
-// ----------------- AUTH ------------------
+//
+// ========== AUTHENTICATION ==========
+//
 
+// WSAuthMiddleware ensures only valid tokens can connect
 func WSAuthMiddleware(c *fiber.Ctx) error {
 	if !websocket.IsWebSocketUpgrade(c) {
 		return fiber.ErrUpgradeRequired
 	}
 
-	clientType := c.Get("clienttype")
+	clientType := strings.ToLower(c.Get("clienttype"))
 
 	var token, id, feature string
 
@@ -102,12 +165,10 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 		if after, ok := strings.CutPrefix(token, "Bearer "); ok {
 			token = after
 		}
-
-		// Id + feature from headers
 		id = c.Get("id")
 		feature = c.Get("feature")
 	} else {
-		// Web: everything from query
+		// Web: from query
 		token = c.Query("token")
 		id = c.Query("id")
 		feature = c.Query("feature")
@@ -117,7 +178,6 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 		return c.Status(401).SendString("Missing authentication token")
 	}
 
-	// Validate token
 	safeToken := url.QueryEscape(token)
 	decodedToken, err := url.QueryUnescape(safeToken)
 	if err != nil {
@@ -125,34 +185,26 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 	}
 
 	isSuccess, _, _, _, tmessage, err := sharedfunctions.ValidateToken(decodedToken)
-	if err != nil {
-		return c.Status(401).SendString(err.Error())
-	}
-	if !isSuccess {
+	if err != nil || !isSuccess {
 		return c.Status(401).SendString(tmessage)
 	}
 
-	// Store values so the websocket.Conn handler can read them
-	c.Locals("clientType", clientType)
 	c.Locals("id", id)
 	c.Locals("feature", feature)
 
 	return c.Next()
 }
 
-// ----------------- HUB INSTANCE ------------------
+//
+// ========== HUB INSTANCE & ROUTES ==========
+//
 
-var MainHub = NewHub()
+var MainHub = NewFeatureList()
 
-// ----------------- REGISTER ROUTES ------------------
+//var Notification = NewFeatureList()
 
-func Register(app *fiber.App) {
-	// Attach both WSAuthMiddleware and handler.AuthMiddleware etc. as needed
-	app.Use("/ws", WSAuthMiddleware)
-
-	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
-
-		// Get values passed from middleware
+func RealtimeFeatureEndpoint() fiber.Handler {
+	return websocket.New(func(c *websocket.Conn) {
 		id, _ := c.Locals("id").(string)
 		feature, _ := c.Locals("feature").(string)
 
@@ -162,10 +214,11 @@ func Register(app *fiber.App) {
 			return
 		}
 		if id == "" {
-			id = "default"
+			c.WriteMessage(websocket.TextMessage, []byte("Missing staff ID"))
+			c.Close()
+			return
 		}
 
 		MainHub.HandleConnection(c, id, feature)
-	}))
-
+	})
 }

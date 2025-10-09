@@ -16,6 +16,7 @@ func GetCardIncStaffInfo() (map[string]any, error) {
 
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "getcardinc_staff")
+
 	return result, nil
 }
 

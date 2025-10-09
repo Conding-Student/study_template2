@@ -90,11 +90,11 @@ func broadcasting(id string, featureName string) error {
 	switch featureName {
 	case "Articles":
 		data, err = Get_Articles()
-		realtime.MainHub.Publish(id, "get_articles", data)
+		realtime.MainHub.Publish("ToAll", "get_articles", data)
 
 	case "Trivia Facts":
 		data, err = Get_Trivia()
-		realtime.MainHub.Publish(id, "get_trivia", data)
+		realtime.MainHub.Publish("ToAll", "get_trivia", data)
 	default:
 		return nil
 	}

@@ -10,15 +10,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type SelectBranchesParams struct {
-	Operation int    `json:"operation"`
-	Region    string `json:"region"`
-}
+// type SelectBranchesParams struct {
+// 	Operation int    `json:"operation"`
+// 	Region    string `json:"region"`
+// }
 
 func GetBranches(c *fiber.Ctx) error {
 	staffid := c.Params("id") // optional for logging
+	getBranchParameters := make(map[string]any)
 
-	getBranchParameters := new(SelectBranchesParams)
 	if err := c.BodyParser(&getBranchParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
@@ -61,10 +61,11 @@ type UpsertBranchesParams struct {
 
 func UpsertBranches(c *fiber.Ctx) error {
 	staffid := c.Params("id") // Optional, used in logs
-
-	upsertParameters := new(UpsertBranchesParams)
-	params_select := new(SelectBranchesParams)
-	if err := c.BodyParser(upsertParameters); err != nil {
+	upsertParameters := make(map[string]any)
+	params_select := make(map[string]any)
+	// upsertParameters := new(UpsertBranchesParams)
+	// params_select := new(SelectBranchesParams)
+	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
 			Message: status.RetCode401,

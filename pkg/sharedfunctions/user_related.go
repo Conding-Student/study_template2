@@ -100,11 +100,11 @@ func FetchUserEmail(staffId string) (string, error) {
 	return email, nil
 }
 
-func UpdateUser(access string, request map[string]any) (map[string]any, error) {
+func UpdateUser(request map[string]any) (map[string]any, error) {
 	db := database.DB
 
 	var result map[string]any
-	if err := db.Raw("SELECT * FROM public.update_user($1, $2)AS update_user", access, request).Scan(&result).Error; err != nil {
+	if err := db.Raw("SELECT * FROM public.update_user($1)AS update_user", request).Scan(&result).Error; err != nil {
 		fmt.Println(err)
 		return nil, err
 	}

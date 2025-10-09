@@ -21,11 +21,7 @@ func GetCardIncUsers(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful!",
-		Data:    staffInfo,
-	})
+	return c.JSON(staffInfo)
 }
 
 // func GetCardIncUsers(c *fiber.Ctx) error {

@@ -12,7 +12,6 @@ import (
 	usermanagement "chatbot/pkg/admin_super/user_management"
 	"chatbot/pkg/authentication"
 	"chatbot/pkg/controllers/healthchecks"
-	practice "chatbot/pkg/elli"
 	"chatbot/pkg/eloading"
 	"chatbot/pkg/empc"
 	"chatbot/pkg/esystem"
@@ -28,6 +27,7 @@ import (
 	"chatbot/pkg/loancalc"
 	"chatbot/pkg/logs"
 	"chatbot/pkg/models/response"
+	"chatbot/pkg/realtime"
 
 	users "chatbot/pkg/user"
 	"chatbot/pkg/utils/go-utils/encryptDecrypt"
@@ -192,9 +192,6 @@ func SetupPublicRoutesB(app *fiber.App) {
 	adminEnpoint.Post("/login/:id", administrator.AdminLogin)
 	adminEnpoint.Post("/logout/:id", users.Logout)
 
-	//practice
-	adminEnpoint.Post("/register", practice.Admin_practice_creation)
-
 	adminEnpoint.Post("/institutionslist", authentication.ValidateAdminToken, handler.Institutions)
 	adminEnpoint.Get("/getallusers/:id" /*authentication.ValidateSuperAdminToken,*/, usermanagement.GetAllUsers)
 	adminEnpoint.Post("accountCreationAD/:id", authentication.ValidateAdminToken, usermanagement.AccountCreationAdmin)
@@ -268,5 +265,6 @@ func SetupPublicRoutesB(app *fiber.App) {
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)
 
 	// WebSocket endpoints
-
+	WebSocketEndpoint := v1Endpoint.Group("/websocket")
+	WebSocketEndpoint.Get("/ws", realtime.WSAuthMiddleware, realtime.RealtimeFeatureEndpoint())
 }
