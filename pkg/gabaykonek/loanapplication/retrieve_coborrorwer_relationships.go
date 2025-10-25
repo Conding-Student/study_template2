@@ -15,7 +15,7 @@ func GetCoBorrowerRelationships(c *fiber.Ctx) error {
 	db := database.DB
 
 	var result map[string]any
-	if err := db.Raw("SELECT * FROM gabaykonekfunc.getrelationships()").Scan(&result).Error; err != nil {
+	if err := db.Raw("SELECT * FROM gabaykonekfunc.get_relationships()").Scan(&result).Error; err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
 			Message: status.RetCode500,

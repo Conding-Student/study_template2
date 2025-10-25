@@ -19,10 +19,10 @@ var GetRegionModule = "Region Module"
 
 func GetRegions(c *fiber.Ctx) error {
 	staffID := c.Params("id") // optional for logging
-	getRegionParameters := new(SelectRegionsParams)
+	getRegionParameters := make(map[string]any)
 
 	// ✅ Parse body into struct
-	if err := c.BodyParser(getRegionParameters); err != nil {
+	if err := c.BodyParser(&getRegionParameters); err != nil {
 		return c.Status(400).JSON(response.ResponseModel{
 			RetCode: "400",
 			Message: "Invalid request body",
@@ -61,8 +61,9 @@ type UpsertRegionParams struct {
 
 func UpsertRegion(c *fiber.Ctx) error {
 	staffid := c.Params("id")
-	upsertParameters := new(UpsertRegionParams)
-	selectparameters := new(SelectRegionsParams)
+	decision := c.Get("operator")
+	upsertParameters := make(jsonBRequestBody)
+	selectparameters := make(jsonBRequestBody)
 	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
@@ -75,7 +76,7 @@ func UpsertRegion(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Region(staffid, upsertParameters, selectparameters)
+	result, err := Upsert_Region(decision, staffid, upsertParameters, selectparameters)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

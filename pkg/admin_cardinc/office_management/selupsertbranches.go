@@ -15,9 +15,11 @@ import (
 // 	Region    string `json:"region"`
 // }
 
+type jsonBRequestBody map[string]any
+
 func GetBranches(c *fiber.Ctx) error {
 	staffid := c.Params("id") // optional for logging
-	getBranchParameters := make(map[string]any)
+	getBranchParameters := make(jsonBRequestBody)
 
 	if err := c.BodyParser(&getBranchParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
@@ -50,19 +52,20 @@ func GetBranches(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-type UpsertBranchesParams struct {
-	Operation  int
-	Region     string
-	Brcode     string
-	BranchName string
-	Active     bool
-	StaffID    string
-}
+// type UpsertBranchesParams struct {
+// 	Operation  int
+// 	Region     string
+// 	Brcode     string
+// 	BranchName string
+// 	Active     bool
+// 	StaffID    string
+// }
 
 func UpsertBranches(c *fiber.Ctx) error {
 	staffid := c.Params("id") // Optional, used in logs
-	upsertParameters := make(map[string]any)
-	params_select := make(map[string]any)
+	decision := c.Get("operator")
+	upsertParameters := make(jsonBRequestBody)
+	params_select := make(jsonBRequestBody)
 	// upsertParameters := new(UpsertBranchesParams)
 	// params_select := new(SelectBranchesParams)
 	if err := c.BodyParser(&upsertParameters); err != nil {
@@ -78,7 +81,7 @@ func UpsertBranches(c *fiber.Ctx) error {
 	}
 
 	// Delegate to SQL function
-	result, err := Upsert_Branch(staffid, upsertParameters, params_select)
+	result, err := Upsert_Branch(decision, staffid, upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

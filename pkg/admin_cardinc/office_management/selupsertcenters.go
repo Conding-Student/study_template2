@@ -10,18 +10,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type SelectCentersParams struct {
-	Operation int    `json:"operation"`
-	Brcode    string `json:"brcode"`
-	UnitCode  int    `json:"unitCode"`
-}
+// type SelectCentersParams struct {
+// 	Operation int    `json:"operation"`
+// 	Brcode    string `json:"brcode"`
+// 	UnitCode  int    `json:"unitCode"`
+// }
 
 var GetCenterModule = "Center Module"
 
 func GetCenters(c *fiber.Ctx) error {
 	staffID := c.Params("id")
 
-	getCenterParameters := new(SelectCentersParams)
+	getCenterParameters := make(jsonBRequestBody)
 	if err := c.BodyParser(&getCenterParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
@@ -54,21 +54,21 @@ func GetCenters(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-type UpsertCentersParams struct {
-	Operation  int    `json:"operation"`
-	Brcode     string `json:"brcode"`
-	UnitCode   int    `json:"unitcode"`
-	CenterCode string `json:"centercode"`
-	CenterName string `json:"centername"`
-	StaffID    string `json:"staffid"`
-}
+// type UpsertCentersParams struct {
+// 	Operation  int    `json:"operation"`
+// 	Brcode     string `json:"brcode"`
+// 	UnitCode   int    `json:"unitcode"`
+// 	CenterCode string `json:"centercode"`
+// 	CenterName string `json:"centername"`
+// 	StaffID    string `json:"staffid"`
+// }
 
 func UpsertCenters(c *fiber.Ctx) error {
 	staffid := c.Params("id") // Optional, used in logs
-
-	upsertParameters := new(UpsertCentersParams)
-	params_select := new(SelectCentersParams)
-	if err := c.BodyParser(upsertParameters); err != nil {
+	decision := c.Get("operator")
+	upsertParameters := make(jsonBRequestBody)
+	params_select := make(jsonBRequestBody)
+	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
 			RetCode: "401",
 			Message: status.RetCode401,
@@ -81,7 +81,7 @@ func UpsertCenters(c *fiber.Ctx) error {
 	}
 
 	// Delegate to SQL function
-	result, err := Upsert_Center(staffid, upsertParameters, params_select)
+	result, err := Upsert_Center(decision, staffid, upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

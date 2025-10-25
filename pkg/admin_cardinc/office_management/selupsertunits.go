@@ -11,16 +11,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type SelectUnitsParams struct {
-	Operation int    `json:"operation"`
-	Brcode    string `json:"brcode"`
-	Staffid   string `json:"staffid"`
-}
+// type SelectUnitsParams struct {
+// 	Operation int    `json:"operation"`
+// 	Brcode    string `json:"brcode"`
+// 	Staffid   string `json:"staffid"`
+// }
 
 func GetUnits(c *fiber.Ctx) error {
 
 	staffid := c.Params("id")
-	GetUnitParameters := new(SelectUnitsParams)
+	GetUnitParameters := make(jsonBRequestBody)
 
 	if err := c.BodyParser(&GetUnitParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
@@ -33,7 +33,7 @@ func GetUnits(c *fiber.Ctx) error {
 			},
 		})
 	}
-	GetUnitParameters.Staffid = staffid
+	GetUnitParameters["staffid"] = staffid
 
 	result, err := Get_Units(GetUnitParameters)
 	if err != nil {
@@ -66,8 +66,9 @@ type UpsertUnitsParams struct {
 
 func UpsertUnits(c *fiber.Ctx) error {
 	staffid := c.Params("id")
-	upsertParameters := new(UpsertUnitsParams)
-	params_select := new(SelectUnitsParams)
+	decision := c.Get("operator")
+	upsertParameters := make(jsonBRequestBody)
+	params_select := make(jsonBRequestBody)
 
 	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
@@ -81,7 +82,7 @@ func UpsertUnits(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Units(staffid, upsertParameters, params_select)
+	result, err := Upsert_Units(decision, staffid, upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

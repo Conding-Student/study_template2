@@ -61,32 +61,50 @@ func GetCredLineProperties() (map[string]string, map[string]Float64, int, string
 	return textMap, fontsMap, 200, "200", "Successful!", "Successfully fetch credit line fields", nil
 }
 
-func CreateCreditLine(operation string, newCreditLine *NewCreditLine) (bool, int, string, string, string, error) {
+// func CreateCreditLine(operation string, newCreditLine *NewCreditLine) (bool, int, string, string, string, error) {
+// 	db := database.DB
+
+// 	createQuery := `SELECT * FROM gabaykonekfunc.crdtlnecreation($1, $2)`
+
+// 	var response map[string]any
+// 	if err := db.Raw(
+// 		createQuery,
+// 		operation,
+// 		newCreditLine,
+// 	).Scan(&response).Error; err != nil {
+// 		fmt.Println(err)
+// 		return false, 500, "500", status.RetCode500, "An error occured while creating credit line.", err
+// 	}
+
+// 	isSuccess := sharedfunctions.GetBoolFromMap(response, "issuccess")
+// 	retcode := sharedfunctions.GetStringFromMap(response, "retcode")
+// 	retcodeInt := sharedfunctions.GetIntFromMap(response, "retcodeint")
+// 	status := sharedfunctions.GetStringFromMap(response, "status")
+// 	message := sharedfunctions.GetStringFromMap(response, "message")
+
+// 	if !isSuccess {
+// 		return isSuccess, retcodeInt, retcode, status, message, nil
+// 	}
+
+// 	return isSuccess, retcodeInt, retcode, status, message, nil
+// }
+
+func CreateCreditLine(newCreditLine map[string]any) (map[string]any, error) {
 	db := database.DB
 
-	createQuery := `SELECT * FROM gabaykonekfunc.crdtlnecreation($1, $2)`
-
 	var response map[string]any
-	if err := db.Raw(
-		createQuery,
-		operation,
-		newCreditLine,
-	).Scan(&response).Error; err != nil {
+	if err := db.Raw(`SELECT * FROM gabaykonekfunc.crdtlne_creation($1)`, newCreditLine).Scan(&response).Error; err != nil {
 		fmt.Println(err)
-		return false, 500, "500", status.RetCode500, "An error occured while creating credit line.", err
+		return nil, err
 	}
 
-	isSuccess := sharedfunctions.GetBoolFromMap(response, "issuccess")
-	retcode := sharedfunctions.GetStringFromMap(response, "retcode")
-	retcodeInt := sharedfunctions.GetIntFromMap(response, "retcodeint")
-	status := sharedfunctions.GetStringFromMap(response, "status")
-	message := sharedfunctions.GetStringFromMap(response, "message")
+	// Convert JSON string fields to proper JSON if necessary
+	sharedfunctions.ConvertStringToJSONMap(response)
 
-	if !isSuccess {
-		return isSuccess, retcodeInt, retcode, status, message, nil
-	}
+	// Extract the JSONB field returned by the function
+	response = sharedfunctions.GetMap(response, "crdtlne_creation")
 
-	return isSuccess, retcodeInt, retcode, status, message, nil
+	return response, nil
 }
 
 func GetCreditLine(staffID string) (map[string]any, error) {

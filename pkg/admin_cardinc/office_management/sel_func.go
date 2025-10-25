@@ -24,7 +24,7 @@ func Get_Branch(params map[string]any) (map[string]any, error) {
 }
 
 // center
-func Get_Center(params *SelectCentersParams) (map[string]any, error) {
+func Get_Center(params map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -60,7 +60,7 @@ func Get_Clusters() (map[string]any, error) {
 }
 
 // Regions
-func Get_Region(params *SelectRegionsParams) (map[string]any, error) {
+func Get_Region(params map[string]any) (map[string]any, error) {
 	db := database.DB
 
 	var result map[string]any
@@ -77,7 +77,7 @@ func Get_Region(params *SelectRegionsParams) (map[string]any, error) {
 }
 
 // Get units
-func Get_Units(params *SelectUnitsParams) (map[string]any, error) {
+func Get_Units(params map[string]any) (map[string]any, error) {
 	db := database.DB
 
 	var result map[string]any
@@ -92,7 +92,7 @@ func Get_Units(params *SelectUnitsParams) (map[string]any, error) {
 	return result, nil
 }
 
-func Upsert_Branch(staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
+func Upsert_Branch(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -110,12 +110,12 @@ func Upsert_Branch(staffid string, params map[string]any, params_select map[stri
 	params_select["region"] = params["Region"]
 
 	if clusters, err := Get_Branch(params_select); err == nil {
-		handleMessage("Branch", staffid, message, clusters)
+		handleMessage(decision, "Branch", staffid, message, clusters)
 	}
 	return result, nil
 }
 
-func Upsert_Center(staffid string, params *UpsertCentersParams, params_select *SelectCentersParams) (map[string]any, error) {
+func Upsert_Center(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -129,17 +129,17 @@ func Upsert_Center(staffid string, params *UpsertCentersParams, params_select *S
 	result = sharedfunctions.GetMap(result, "upsert_centers") // same as Get_Center
 	message := sharedfunctions.GetStringFromMap(result, "retCode")
 
-	params_select.Operation = 1 // to fetch all centers
-	params_select.Brcode = params.Brcode
-	params_select.UnitCode = params.UnitCode
+	params_select["operation"] = 1 // to fetch all centers
+	params_select["brcode"] = params["brcode"]
+	params_select["unitcode"] = params["unitcode"]
 
 	if clusters, err := Get_Center(params_select); err == nil {
-		handleMessage("Center", staffid, message, clusters)
+		handleMessage(decision, "Center", staffid, message, clusters)
 	}
 	return result, nil
 }
 
-func Upsert_Cluster(staffid string, params *UpsertClusterParams) (map[string]any, error) {
+func Upsert_Cluster(decision string, staffid string, params map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -153,13 +153,13 @@ func Upsert_Cluster(staffid string, params *UpsertClusterParams) (map[string]any
 
 	// ✅ Safely re-fetch clusters for broadcasting
 	if clusters, err := Get_Clusters(); err == nil {
-		handleMessage("Cluster", staffid, message, clusters)
+		handleMessage(decision, "Cluster", staffid, message, clusters)
 	}
 
 	return result, nil
 }
 
-func Upsert_Region(staffid string, params *UpsertRegionParams, params_select *SelectRegionsParams) (map[string]any, error) {
+func Upsert_Region(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -173,34 +173,36 @@ func Upsert_Region(staffid string, params *UpsertRegionParams, params_select *Se
 	result = sharedfunctions.GetMap(result, "upsert_region")
 	message := sharedfunctions.GetStringFromMap(result, "retCode")
 
-	params_select.SelectOption = 1 // to fetch all regions
-	params_select.Cluster = params.Cluster
+	params_select["operation"] = 1 // to fetch all regions
+	params_select["cluster"] = params["cluster"]
 
 	if clusters, err := Get_Region(params_select); err == nil {
-		handleMessage("Region", staffid, message, clusters)
+		handleMessage(decision, "Region", staffid, message, clusters)
 	}
 	return result, nil
 }
 
-func Upsert_Units(staffid string, params *UpsertUnitsParams, params_select *SelectUnitsParams) (map[string]any, error) {
+func Upsert_Units(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
 	// Call PostgreSQL function with JSONB payload
-	if err := db.Raw(`SELECT cardincoffices.upsert_units(?)`, params).Scan(&result).Error; err != nil {
+	if err := db.Raw(`SELECT cardincoffices.SirArjayupsertunits(?)`, params).Scan(&result).Error; err != nil {
 		return nil, err
 	}
 
 	// Convert and unwrap JSON result
 	sharedfunctions.ConvertStringToJSONMap(result)
-	result = sharedfunctions.GetMap(result, "upsert_units")
+	result = sharedfunctions.GetMap(result, "sirarjayupsertunits")
 	message := sharedfunctions.GetStringFromMap(result, "retCode")
+	data := sharedfunctions.GetMap(result, "data")
+	staffId := sharedfunctions.GetStringFromMap(data, "staffid")
 
-	params_select.Operation = 1 // to fetch all units
-	params_select.Brcode = params.Brcode
+	params_select["operation"] = 1 // to fetch all units
+	params_select["brcode"] = params["brcode"]
 
 	if clusters, err := Get_Units(params_select); err == nil {
-		handleMessage("Unit", staffid, message, clusters)
+		handleMessage(decision, "Unit", staffId, message, clusters)
 	}
 	return result, nil
 }
@@ -269,7 +271,7 @@ func UpdateCenterStaffDB(params map[string]any) (map[string]any, error) {
 	return result, nil
 }
 
-func handleMessage(functionName string, staffid string, message string, result any) {
+func handleMessage(decision string, functionName string, staffid string, message string, result any) {
 	if message == "200" {
 		hubs := map[string]func(any){
 			"Center": func(data any) {
@@ -282,7 +284,7 @@ func handleMessage(functionName string, staffid string, message string, result a
 				realtime.MainHub.Publish("ToAll", "get_region", data)
 			},
 			"Unit": func(data any) {
-				realtime.MainHub.Publish("ToAll", "get_unit", data)
+				realtime.MainHub.Publish(staffid, "get_unit", data)
 			},
 			"Branch": func(data any) {
 				realtime.MainHub.Publish("ToAll", "get_branch", data)

@@ -106,7 +106,7 @@ func main() {
 
 	default:
 
-		if utils.GetEnv("SSL") == "enabled" {
+		if utils.GetEnv("SSL") == "disabled" {
 			log.Fatal(app.ListenTLS(
 				fmt.Sprintf(":%s", utils.GetEnv("PORT")),
 				utils.GetEnv("SSL_CERTIFICATE"),

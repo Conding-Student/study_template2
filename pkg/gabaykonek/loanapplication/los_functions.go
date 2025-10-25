@@ -197,36 +197,49 @@ func LoanCalculator(computeLoan map[string]any) (*LoanCalculatorPlusResponse, bo
 	return &responses, true, 200, "200", "Successful!", "Loan succesfully computed", nil
 }
 
-func GetAllLoans(staffID string) (map[string]any, bool, int, string, string, string, error) {
+// func GetAllLoans(staffID string) (map[string]any, bool, int, string, string, string, error) {
+// 	db := database.DB
+
+// 	var response map[string]any
+// 	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloanapplications($1)", staffID).Scan(&response).Error; err != nil {
+// 		fmt.Println(err)
+// 		return nil, false, 500, "500", status.RetCode500, "An error occured while conecting to database.", err
+// 	}
+
+// 	sharedfunctions.ConvertStringToJSONMap(response)
+// 	result := sharedfunctions.GetMap(response, "response")
+
+// 	isSuccess := sharedfunctions.GetBoolFromMap(result, "issuccess")
+// 	status := sharedfunctions.GetStringFromMap(result, "status")
+// 	retCode := sharedfunctions.GetStringFromMap(result, "retcode")
+// 	retCodeInt := sharedfunctions.GetIntFromMap(result, "retcode")
+// 	message := sharedfunctions.GetStringFromMap(result, "message")
+
+// 	fmt.Println("------------------------------------------------------------------------------------------------------------------------")
+// 	fmt.Println("\nFetch Loan Successful: ", isSuccess)
+// 	fmt.Println("Message: ", message)
+// 	fmt.Println("\n------------------------------------------------------------------------------------------------------------------------")
+
+// 	if !isSuccess {
+// 		return nil, isSuccess, retCodeInt, retCode, status, message, fmt.Errorf(message)
+// 	}
+
+//		return result, isSuccess, retCodeInt, retCode, status, message, nil
+//	}
+func GetAllLoans(staffID string) (map[string]any, error) {
 	db := database.DB
 
 	var response map[string]any
 	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloanapplications($1)", staffID).Scan(&response).Error; err != nil {
 		fmt.Println(err)
-		return nil, false, 500, "500", status.RetCode500, "An error occured while conecting to database.", err
+		return nil, err
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(response)
 	result := sharedfunctions.GetMap(response, "response")
-
-	isSuccess := sharedfunctions.GetBoolFromMap(result, "issuccess")
-	status := sharedfunctions.GetStringFromMap(result, "status")
-	retCode := sharedfunctions.GetStringFromMap(result, "retcode")
-	retCodeInt := sharedfunctions.GetIntFromMap(result, "retcode")
-	message := sharedfunctions.GetStringFromMap(result, "message")
-
-	fmt.Println("------------------------------------------------------------------------------------------------------------------------")
-	fmt.Println("\nFetch Loan Successful: ", isSuccess)
-	fmt.Println("Message: ", message)
-	fmt.Println("\n------------------------------------------------------------------------------------------------------------------------")
-
-	if !isSuccess {
-		return nil, isSuccess, retCodeInt, retCode, status, message, fmt.Errorf(message)
-	}
-
-	return result, isSuccess, retCodeInt, retCode, status, message, nil
+	fmt.Print(result)
+	return result, nil
 }
-
 func GetPpiQuestionaire() (map[string]any, error) {
 	db := database.DB
 

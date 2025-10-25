@@ -58,7 +58,7 @@ func UpdateUsers(c *fiber.Ctx) error {
 			sharedfunctions.ConvertStringToJSONMap(allUser)
 			allUsers := sharedfunctions.GetList(allUser, "getalluser")
 			realtime.MainHub.Publish(staffid, "get_allusers", allUsers)
-			//realtime.MainHub.Publish("", "get_allusers", allUsers)
+			//realtime.MainHub.Publish("ToAll", "get_allusers", allUsers)
 
 		}
 	}

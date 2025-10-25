@@ -1,10 +1,11 @@
 package realtime
 
 import (
-	"chatbot/pkg/sharedfunctions"
+	//"chatbot/pkg/sharedfunctions"
 	"encoding/json"
 	"log"
-	"net/url"
+
+	//"net/url"
 	"strings"
 	"sync"
 
@@ -21,85 +22,110 @@ type WSClient struct {
 	Send chan []byte
 }
 
-// FeatureConnections manages connections for one "feature"
 type FeatureConnections struct {
-	groups map[string]map[*WSClient]bool // id -> connections
+	groups map[string]map[*WSClient]bool // id -> set of clients
 	mu     sync.RWMutex
 }
 
-// FeatureList is the global manager holding all features and their connections
 type FeatureList struct {
-	items map[string]*FeatureConnections // feature name -> FeatureConnections
-	mu    sync.RWMutex                   // lock for accessing features map
+	items map[string]*FeatureConnections // feature -> FeatureConnections
+	mu    sync.RWMutex
 }
 
-// NewFeatureList creates a new feature list with an empty map
 func NewFeatureList() *FeatureList {
 	return &FeatureList{
 		items: make(map[string]*FeatureConnections),
 	}
 }
 
-// returns a feature, creating it if needed
 func (fl *FeatureList) getOrCreateFeatureconn(feature string) *FeatureConnections {
 	fl.mu.Lock()
-	defer fl.mu.Unlock() //unlock after checking/creating
+	defer fl.mu.Unlock()
 
-	if _, ok := fl.items[feature]; !ok {
-		fl.items[feature] = &FeatureConnections{
-			groups: make(map[string]map[*WSClient]bool),
-		}
-		log.Printf("[INIT] Created new connection under specific feature: %s", feature)
+	conn, ok := fl.items[feature]
+	if !ok {
+		conn = &FeatureConnections{groups: make(map[string]map[*WSClient]bool)}
+		fl.items[feature] = conn
+		log.Printf("[INIT] Created new connection for feature: %s", feature)
 	}
-	return fl.items[feature]
+	return conn
 }
 
 //
 // ========== CONNECTION MANAGEMENT ==========
 //
 
-// HandleConnection registers a connection under a feature + id
 func (h *FeatureList) HandleConnection(c *websocket.Conn, id, feature string) {
-	featureConn := h.getOrCreateFeatureconn(feature)
+	fc := h.getOrCreateFeatureconn(feature)
+
+	// Whitelist check
+	whitelist, err := GetWhitelist(map[string]any{"featurename": feature})
+	if err != nil {
+		log.Printf("[ERROR] Failed to get whitelist for feature=%s: %v", feature, err)
+		c.WriteMessage(websocket.TextMessage, []byte("Error checking whitelist"))
+		c.Close()
+		return
+	}
+
+	// If whitelist is empty or not found, allow connection
+	data, ok := whitelist["data"].([]any)
+	if !ok || len(data) == 0 {
+		log.Printf("[ALLOW] Feature=%s has no whitelist — open access", feature)
+	} else if !isIDInWhitelist(id, whitelist) {
+		log.Printf("[DENY] ID=%s not in whitelist for feature=%s", id, feature)
+		c.WriteMessage(websocket.TextMessage, []byte("Access denied: ID not in whitelist"))
+		c.Close()
+		return
+	}
 
 	client := &WSClient{
 		Conn: c,
-		Send: make(chan []byte, 100), // buffered queue per client
+		Send: make(chan []byte, 100),
 	}
 
-	// Register safely
-	featureConn.mu.Lock()
-	if _, ok := featureConn.groups[id]; !ok {
-		featureConn.groups[id] = make(map[*WSClient]bool)
+	// Register connection
+	fc.mu.Lock()
+	if _, ok := fc.groups[id]; !ok {
+		fc.groups[id] = make(map[*WSClient]bool)
 	}
-	featureConn.groups[id][client] = true
-	totalIDs := len(featureConn.groups)
-	featureConn.mu.Unlock()
+	fc.groups[id][client] = true
+	total := len(fc.groups)
+	fc.mu.Unlock()
 
-	log.Printf("[CONNECT] Feature=%s | ID=%s | Total IDs=%d", feature, id, totalIDs)
+	log.Printf("[CONNECT] Feature=%s | ID=%s | Total IDs=%d", feature, id, total)
 
-	// Start writer goroutine
-	go func(cl *WSClient) {
-		for msg := range cl.Send {
-			if err := cl.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-				log.Printf("[WRITE ERR] Closing client: %v", err)
-				cl.Conn.Close()
+	// Writer goroutine
+	go func() {
+		for msg := range client.Send {
+			if err := client.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				log.Printf("[WRITE ERR] Closing client (%s): %v", feature, err)
+				client.Conn.Close()
 				break
 			}
 		}
-	}(client)
+	}()
 
 	// Cleanup on disconnect
 	defer func() {
-		featureConn.mu.Lock()
-		delete(featureConn.groups[id], client)
-		if len(featureConn.groups[id]) == 0 {
-			delete(featureConn.groups, id)
+		fc.mu.Lock()
+
+		conns := fc.groups[id]
+		for c2 := range conns {
+			if c2 == client {
+				delete(conns, c2)
+				break
+			}
 		}
-		featureConn.mu.Unlock()
+		if len(conns) == 0 {
+			delete(fc.groups, id)
+		}
+
+		remaining := len(fc.groups)
+		fc.mu.Unlock()
+
 		close(client.Send)
 		c.Close()
-		log.Printf("[DISCONNECT] Feature=%s | ID=%s | Remaining IDs=%d", feature, id, len(featureConn.groups))
+		log.Printf("[DISCONNECT] Feature=%s | ID=%s | Remaining IDs=%d", feature, id, remaining)
 	}()
 
 	// Keep alive
@@ -114,27 +140,15 @@ func (h *FeatureList) HandleConnection(c *websocket.Conn, id, feature string) {
 // ========== MESSAGE BROADCAST ==========
 //
 
-// Publish sends data to all clients in a feature (optionally filtered by id)
-func (h *FeatureList) Publish(id string, feature string, data any) {
-	fetchfeatured := h.getOrCreateFeatureconn(feature)
+func (h *FeatureList) Publish(id, feature string, data any) {
+	fc := h.getOrCreateFeatureconn(feature)
 
-	// Marshal message once
 	msg, _ := json.Marshal(data)
 
-	fetchfeatured.mu.RLock()
-	defer fetchfeatured.mu.RUnlock()
+	fc.mu.RLock()
+	defer fc.mu.RUnlock()
 
-	if id == "ToAll" {
-		for _, clients := range fetchfeatured.groups {
-			for client := range clients {
-				select {
-				case client.Send <- msg:
-				default:
-					log.Printf("[DROP] Queue full for %v", client.Conn.RemoteAddr())
-				}
-			}
-		}
-	} else if clients, ok := fetchfeatured.groups[id]; ok {
+	sendToClients := func(clients map[*WSClient]bool) {
 		for client := range clients {
 			select {
 			case client.Send <- msg:
@@ -143,13 +157,20 @@ func (h *FeatureList) Publish(id string, feature string, data any) {
 			}
 		}
 	}
+
+	if id == "ToAll" {
+		for _, clients := range fc.groups {
+			sendToClients(clients)
+		}
+	} else if clients, ok := fc.groups[id]; ok {
+		sendToClients(clients)
+	}
 }
 
 //
-// ========== AUTHENTICATION ==========
+// ========== AUTH MIDDLEWARE ==========
 //
 
-// WSAuthMiddleware ensures only valid tokens can connect
 func WSAuthMiddleware(c *fiber.Ctx) error {
 	if !websocket.IsWebSocketUpgrade(c) {
 		return fiber.ErrUpgradeRequired
@@ -158,17 +179,11 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 	clientType := strings.ToLower(c.Get("clienttype"))
 
 	var token, id, feature string
-
 	if clientType == "mobile" {
-		// Token from headers
-		token = c.Get("Authorization")
-		if after, ok := strings.CutPrefix(token, "Bearer "); ok {
-			token = after
-		}
+		token = strings.TrimPrefix(c.Get("Authorization"), "Bearer ")
 		id = c.Get("id")
 		feature = c.Get("feature")
 	} else {
-		// Web: from query
 		token = c.Query("token")
 		id = c.Query("id")
 		feature = c.Query("feature")
@@ -178,16 +193,17 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 		return c.Status(401).SendString("Missing authentication token")
 	}
 
-	safeToken := url.QueryEscape(token)
-	decodedToken, err := url.QueryUnescape(safeToken)
-	if err != nil {
-		return c.Status(400).SendString("Invalid token encoding")
-	}
+	//decodedToken, err := url.QueryUnescape(token)
+	//decodedToken, err := url.QueryUnescape(url.QueryEscape(token))
 
-	isSuccess, _, _, _, tmessage, err := sharedfunctions.ValidateToken(decodedToken)
-	if err != nil || !isSuccess {
-		return c.Status(401).SendString(tmessage)
-	}
+	// if err != nil {
+	// 	return c.Status(400).SendString("Invalid token encoding")
+	// }
+
+	// isValid, _, _, _, msg, err := sharedfunctions.ValidateToken(decodedToken)
+	// if err != nil || !isValid {
+	// 	return c.Status(401).SendString(msg)
+	// }
 
 	c.Locals("id", id)
 	c.Locals("feature", feature)
@@ -201,12 +217,10 @@ func WSAuthMiddleware(c *fiber.Ctx) error {
 
 var MainHub = NewFeatureList()
 
-//var Notification = NewFeatureList()
-
 func RealtimeFeatureEndpoint() fiber.Handler {
 	return websocket.New(func(c *websocket.Conn) {
-		id, _ := c.Locals("id").(string)
-		feature, _ := c.Locals("feature").(string)
+		id := c.Locals("id").(string)
+		feature := c.Locals("feature").(string)
 
 		if feature == "" {
 			c.WriteMessage(websocket.TextMessage, []byte("Missing feature"))

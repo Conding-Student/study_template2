@@ -17,7 +17,7 @@ type LoanProductResponse struct {
 
 func LoanProducts(c *fiber.Ctx) error {
 	var result map[string]any
-	if err := database.DB.Raw("SELECT * FROM gabaykonekfunc.loanproducts()").Scan(&result).Error; err != nil {
+	if err := database.DB.Raw("SELECT * FROM gabaykonekfunc.loan_products()").Scan(&result).Error; err != nil {
 		log.Println(err)
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -31,13 +31,9 @@ func LoanProducts(c *fiber.Ctx) error {
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(result)
-	loans := sharedfunctions.GetList(result, "response")
+	loans := sharedfunctions.GetMap(result, "loan_products")
 
-	return c.JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful",
-		Data:    loans,
-	})
+	return c.JSON(loans)
 }
 
 func LoanProductListAndDetails(c *fiber.Ctx) error {

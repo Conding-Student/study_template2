@@ -48,7 +48,7 @@ func GetLoanCategory(c *fiber.Ctx) error {
 	LOSFeature := "LOS - Retrieve Loan Category" + id
 
 	var result map[string]any
-	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloancategory()").Scan(&result).Error; err != nil {
+	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloan_category()").Scan(&result).Error; err != nil {
 		logs.LOSLogs(c, LOSFeature, id, "500", err.Error())
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -62,18 +62,14 @@ func GetLoanCategory(c *fiber.Ctx) error {
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(result)
-	loanCategory := sharedfunctions.GetList(result, "response")
+	results := sharedfunctions.GetMap(result, "getloan_category")
 
 	fmt.Println("--------------------------------------------------------------------------------------------------")
 	fmt.Println("Fetched Loan Category For CA-GABAY and kPlus")
 	fmt.Println("------------------------------------------------------------------------------------------------")
 
 	logs.LOSLogs(c, LOSFeature, id, "200", "Successfully fetch Loan Categories.")
-	return c.JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful",
-		Data:    loanCategory,
-	})
+	return c.JSON(results)
 }
 
 // For CA-GABAY // No params
@@ -83,7 +79,7 @@ func GetLoanPurpose(c *fiber.Ctx) error {
 	LOSFeature := "LOS - Retrieve Loan Purpose" + id
 
 	var result map[string]any
-	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloanpurpose()").Scan(&result).Error; err != nil {
+	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloan_purpose()").Scan(&result).Error; err != nil {
 		logs.LOSLogs(c, LOSFeature, id, "500", err.Error())
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -97,17 +93,13 @@ func GetLoanPurpose(c *fiber.Ctx) error {
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(result)
-	loanPurpose := sharedfunctions.GetList(result, "response")
+	results := sharedfunctions.GetMap(result, "getloan_purpose")
 
 	fmt.Println("--------------------------------------------------------------------------------------------------")
 	fmt.Println("Fetched Loan Purpose For CA-GABAY")
 	fmt.Println("------------------------------------------------------------------------------------------------")
 
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful",
-		Data:    loanPurpose,
-	})
+	return c.JSON(results)
 }
 
 // For CA-GABAY and kPlus // No params

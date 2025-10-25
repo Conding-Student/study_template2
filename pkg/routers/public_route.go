@@ -104,7 +104,7 @@ func SetupPublicRoutes(app *fiber.App) {
 	esystemEndpoint.Post("/getClientSavingsBalance", esystem.GetClientSavingsBalance)
 	esystemEndpoint.Post("/getClientCurrentLoansAndSavingsBalance/:id", esystem.GetClientCurrentLoansAndSavingsBalance)
 
-	loanCalculatorEndpoint := v1Endpoint.Group("/loancalculator", handler.ServerSwitchLoanCalculator, authentication.ValidateUserToken)
+	loanCalculatorEndpoint := v1Endpoint.Group("/loancalculator" /*handler.ServerSwitchLoanCalculator, authentication.ValidateUserToken*/)
 	loanCalculatorEndpoint.Get("/calcLoanProducts/:id", loans.LoanProducts)
 	loanCalculatorEndpoint.Post("/computeloan/:id", loancalc.BankLoanCalculator)
 
@@ -112,14 +112,14 @@ func SetupPublicRoutes(app *fiber.App) {
 
 	loanEndpoint := gabayKonekEndpoint.Group("/loan")
 	loanEndpoint.Get("/loanProductListAndDetails", authentication.ValidateUserToken, loans.LoanProductListAndDetails)
-	loanEndpoint.Get("/midasDetails/:id", authentication.ValidateUserToken, loans.ViewMidasDetails)
-	loanEndpoint.Get("/loanStatusAndRoles/:id", authentication.ValidateUserToken, loans.LoanStatusAndRoles)
-	loanEndpoint.Get("/getGradeLevel/:id", authentication.ValidateUserToken, loans.GetGradeLevel)
-	loanEndpoint.Get("/getRelationships/:id", authentication.ValidateUserToken, loans.GetCoBorrowerRelationships)
+	loanEndpoint.Get("/midasDetails/:id" /*authentication.ValidateUserToken,*/, loans.ViewMidasDetails)
+	loanEndpoint.Get("/loanStatusAndRoles/:id" /*authentication.ValidateUserToken,*/, loans.LoanStatusAndRoles)
+	loanEndpoint.Get("/getGradeLevel/:id" /*authentication.ValidateUserToken,*/, loans.GetGradeLevel)
+	loanEndpoint.Get("/getRelationships/:id" /*authentication.ValidateUserToken,*/, loans.GetCoBorrowerRelationships)
 	loanEndpoint.Post("/loanCalculatorPlus", authentication.ValidateUserToken, loans.LoanCalculatorPlus)
-	loanEndpoint.Post("/getLoanApplication/:id", authentication.ValidateUserToken /*,loans.AutoCancellationOfPendingApprovedLoans,*/, loans.GetLoanApplications)
+	loanEndpoint.Post("/getLoanApplication/:id" /*authentication.ValidateUserToken*/ /*,loans.AutoCancellationOfPendingApprovedLoans,*/, loans.GetLoanApplications)
 	loanEndpoint.Post("/updateLoanApplication/:id", authentication.ValidateUserToken, loans.UpdateLoanApplication)
-	loanEndpoint.Get("/getppiquestionaire/:id", authentication.ValidateUserToken, loans.GetPPIQuestionaire)
+	loanEndpoint.Get("/getppiquestionaire/:id" /*authentication.ValidateUserToken,*/, loans.GetPPIQuestionaire)
 	loanEndpoint.Post("/getloansperclient/:id", authentication.ValidateUserToken, loans.GetLoansPerClient)
 	loanEndpoint.Get("/loanCategory/:id", loans.GetLoanCategory)     // no params
 	loanEndpoint.Get("/getLoanPurposes/:id", loans.GetLoanPurpose)   // no params
@@ -265,6 +265,11 @@ func SetupPublicRoutesB(app *fiber.App) {
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)
 
 	// WebSocket endpoints
-	WebSocketEndpoint := v1Endpoint.Group("/websocket")
-	WebSocketEndpoint.Get("/ws", realtime.WSAuthMiddleware, realtime.RealtimeFeatureEndpoint())
+	WebSocketEndpoint := v1Endpoint.Group("/websocket" /*handler.AuthMiddleware*/)
+	WebSocketEndpoint.Get("/globalfeature", realtime.WSAuthMiddleware, realtime.RealtimeFeatureEndpoint())
+	WebSocketEndpoint.Post("/getwhitelistWS", realtime.GetwhitelistWS)
+	WebSocketEndpoint.Post("/addwhitelistWS", realtime.AddwhitelistWS)
+	WebSocketEndpoint.Post("/delwhitelistWS", realtime.DelwhitelistWS)
+	WebSocketEndpoint.Post("/delfeaturewhitelistWS", realtime.DelfeaturewhitelistWS)
+	WebSocketEndpoint.Post("/getfeaturewhitelistWS", realtime.GetfeatureswhitelistWS)
 }

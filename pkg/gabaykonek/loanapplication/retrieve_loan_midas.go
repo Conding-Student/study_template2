@@ -14,7 +14,7 @@ func ViewMidasDetails(c *fiber.Ctx) error {
 	LOSFeature := "LOS - Retrieve Midas Details"
 
 	var results map[string]any
-	if err := database.DB.Raw("SELECT * FROM gabaykonekfunc.getmidas()").Scan(&results).Error; err != nil {
+	if err := database.DB.Raw("SELECT * FROM gabaykonekfunc.get_midas()").Scan(&results).Error; err != nil {
 		database.DB.Rollback()
 		logs.LOSLogs(c, LOSFeature, "", "500", err.Error())
 		return c.Status(500).JSON(response.ResponseModel{
@@ -29,12 +29,8 @@ func ViewMidasDetails(c *fiber.Ctx) error {
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(results)
-	midas := sharedfunctions.GetList(results, "getmidas")
+	midas := sharedfunctions.GetMap(results, "get_midas")
 
 	logs.LOSLogs(c, LOSFeature, "", "200", "Midas data retrieved successfully")
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Midas data retrieved successfully",
-		Data:    midas,
-	})
+	return c.JSON(midas)
 }

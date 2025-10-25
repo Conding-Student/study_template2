@@ -16,7 +16,7 @@ func LoanStatusAndRoles(c *fiber.Ctx) error {
 	LOSFeature := "LOS - Retrieve Loan Status and Roles" + id
 
 	var result map[string]any
-	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloanstatusandroles()").Scan(&result).Error; err != nil {
+	if err := db.Raw("SELECT * FROM gabaykonekfunc.getloan_statusandroles()").Scan(&result).Error; err != nil {
 		logs.LOSLogs(c, LOSFeature, id, "500", err.Error())
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "200",
@@ -30,12 +30,8 @@ func LoanStatusAndRoles(c *fiber.Ctx) error {
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(result)
-	statusAndRoles := sharedfunctions.GetMap(result, "getloanstatusandroles")
+	statusAndRoles := sharedfunctions.GetMap(result, "getloan_statusandroles")
 
 	logs.LOSLogs(c, LOSFeature, id, "200", "Fetch loan status and  user roles successfully!")
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "Successful!",
-		Data:    statusAndRoles,
-	})
+	return c.JSON(statusAndRoles)
 }

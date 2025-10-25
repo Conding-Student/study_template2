@@ -15,7 +15,7 @@ func GetPPIQuestionaire(c *fiber.Ctx) error {
 	LOSFeature := "LOS - PPI Questionares"
 
 	var results map[string]any
-	if err := database.DB.Raw("SELECT * FROM gabaykonekfunc.getppiquestionaire()").Scan(&results).Error; err != nil {
+	if err := database.DB.Raw("SELECT * FROM gabaykonekfunc.get_ppiquestionaire()").Scan(&results).Error; err != nil {
 		database.DB.Rollback()
 		logs.LOSLogs(c, LOSFeature, "PPI Questionares retrieving failed", "500", err.Error())
 		return c.Status(500).JSON(response.ResponseModel{
@@ -30,12 +30,8 @@ func GetPPIQuestionaire(c *fiber.Ctx) error {
 	}
 
 	sharedfunctions.ConvertStringToJSONMap(results)
-	questionaire := sharedfunctions.GetList(results, "getppiquestionaire")
+	questionaire := sharedfunctions.GetMap(results, "get_ppiquestionaire")
 
 	logs.LOSLogs(c, LOSFeature, "", "200", "PPI Questionares retrieved successfully")
-	return c.Status(200).JSON(response.ResponseModel{
-		RetCode: "200",
-		Message: "PPI Questionares",
-		Data:    questionaire,
-	})
+	return c.JSON(questionaire)
 }
