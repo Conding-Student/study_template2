@@ -61,7 +61,6 @@ type UpsertRegionParams struct {
 
 func UpsertRegion(c *fiber.Ctx) error {
 	staffid := c.Params("id")
-	decision := c.Get("operator")
 	upsertParameters := make(jsonBRequestBody)
 	selectparameters := make(jsonBRequestBody)
 	if err := c.BodyParser(&upsertParameters); err != nil {
@@ -76,7 +75,7 @@ func UpsertRegion(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Region(decision, staffid, upsertParameters, selectparameters)
+	result, err := Upsert_Region(upsertParameters, selectparameters)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

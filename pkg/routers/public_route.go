@@ -27,7 +27,7 @@ import (
 	"chatbot/pkg/loancalc"
 	"chatbot/pkg/logs"
 	"chatbot/pkg/models/response"
-	"chatbot/pkg/realtime"
+	"chatbot/pkg/websocket"
 
 	users "chatbot/pkg/user"
 	"chatbot/pkg/utils/go-utils/encryptDecrypt"
@@ -265,11 +265,11 @@ func SetupPublicRoutesB(app *fiber.App) {
 	mlniTrackingEnpoint.Post("/updatemlniusers/:id", adminmlni.UpdateMlniUser)
 
 	// WebSocket endpoints
-	WebSocketEndpoint := v1Endpoint.Group("/websocket" /*handler.AuthMiddleware*/)
-	WebSocketEndpoint.Get("/globalfeature", realtime.WSAuthMiddleware, realtime.RealtimeFeatureEndpoint())
-	WebSocketEndpoint.Post("/getwhitelistWS", realtime.GetwhitelistWS)
-	WebSocketEndpoint.Post("/addwhitelistWS", realtime.AddwhitelistWS)
-	WebSocketEndpoint.Post("/delwhitelistWS", realtime.DelwhitelistWS)
-	WebSocketEndpoint.Post("/delfeaturewhitelistWS", realtime.DelfeaturewhitelistWS)
-	WebSocketEndpoint.Post("/getfeaturewhitelistWS", realtime.GetfeatureswhitelistWS)
+	WebSocketEndpoint := v1Endpoint.Group("/websocket" /*websocket.WSAuthMiddleware*/)
+	WebSocketEndpoint.Get("/mobile", websocket.StaffidPerWebSocket())
+	// WebSocketEndpoint.Post("/getwhitelistWS", realtime.GetwhitelistWS)
+	// WebSocketEndpoint.Post("/addwhitelistWS", realtime.AddwhitelistWS)
+	// WebSocketEndpoint.Post("/delwhitelistWS", realtime.DelwhitelistWS)
+	// WebSocketEndpoint.Post("/delfeaturewhitelistWS", realtime.DelfeaturewhitelistWS)
+	// WebSocketEndpoint.Post("/getfeaturewhitelistWS", realtime.GetfeatureswhitelistWS)
 }

@@ -65,8 +65,7 @@ type UpsertUnitsParams struct {
 }
 
 func UpsertUnits(c *fiber.Ctx) error {
-	staffid := c.Params("id")
-	decision := c.Get("operator")
+	//staffid := c.Params("id")
 	upsertParameters := make(jsonBRequestBody)
 	params_select := make(jsonBRequestBody)
 
@@ -82,7 +81,7 @@ func UpsertUnits(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Units(decision, staffid, upsertParameters, params_select)
+	result, err := Upsert_Units(upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",
@@ -94,10 +93,10 @@ func UpsertUnits(c *fiber.Ctx) error {
 			},
 		})
 	}
-	retCode := sharedfunctions.GetStringFromMap(result, "retCode")
-	message := sharedfunctions.GetStringFromMap(result, "message")
+	//retCode := sharedfunctions.GetStringFromMap(result, "retCode")
+	//message := sharedfunctions.GetStringFromMap(result, "message")
 
 	// Log operation
-	logs.LOSLogs(c, GetRegionModule, staffid, retCode, message)
+	//logs.LOSLogs(c, GetRegionModule, staffid, retCode, message)
 	return c.JSON(result)
 }

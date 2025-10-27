@@ -65,7 +65,6 @@ func GetCenters(c *fiber.Ctx) error {
 
 func UpsertCenters(c *fiber.Ctx) error {
 	staffid := c.Params("id") // Optional, used in logs
-	decision := c.Get("operator")
 	upsertParameters := make(jsonBRequestBody)
 	params_select := make(jsonBRequestBody)
 	if err := c.BodyParser(&upsertParameters); err != nil {
@@ -81,7 +80,7 @@ func UpsertCenters(c *fiber.Ctx) error {
 	}
 
 	// Delegate to SQL function
-	result, err := Upsert_Center(decision, staffid, upsertParameters, params_select)
+	result, err := Upsert_Center(upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

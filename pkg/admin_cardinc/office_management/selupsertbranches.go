@@ -63,7 +63,6 @@ func GetBranches(c *fiber.Ctx) error {
 
 func UpsertBranches(c *fiber.Ctx) error {
 	staffid := c.Params("id") // Optional, used in logs
-	decision := c.Get("operator")
 	upsertParameters := make(jsonBRequestBody)
 	params_select := make(jsonBRequestBody)
 	// upsertParameters := new(UpsertBranchesParams)
@@ -81,7 +80,7 @@ func UpsertBranches(c *fiber.Ctx) error {
 	}
 
 	// Delegate to SQL function
-	result, err := Upsert_Branch(decision, staffid, upsertParameters, params_select)
+	result, err := Upsert_Branch(upsertParameters, params_select)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

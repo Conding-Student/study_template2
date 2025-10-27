@@ -45,7 +45,6 @@ func GetClusters(c *fiber.Ctx) error {
 }
 func UpsertCluster(c *fiber.Ctx) error {
 	staffid := c.Params("id") // optional for logging
-	decision := c.Get("operator")
 	upsertParameters := make(jsonBRequestBody)
 	if err := c.BodyParser(&upsertParameters); err != nil {
 		return c.Status(401).JSON(response.ResponseModel{
@@ -59,7 +58,7 @@ func UpsertCluster(c *fiber.Ctx) error {
 		})
 	}
 
-	result, err := Upsert_Cluster(decision, staffid, upsertParameters)
+	result, err := Upsert_Cluster(upsertParameters)
 	if err != nil {
 		return c.Status(500).JSON(response.ResponseModel{
 			RetCode: "500",

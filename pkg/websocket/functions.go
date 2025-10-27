@@ -1,4 +1,4 @@
-package realtime
+package websocket
 
 import (
 	"chatbot/pkg/sharedfunctions"

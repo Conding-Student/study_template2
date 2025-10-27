@@ -2,7 +2,6 @@ package adminmlni
 
 import (
 	"chatbot/pkg/models/status"
-	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 
 func handleMessage(staffid string, message string, get map[string]any) {
 	if message == "Successful!" {
-		realtime.MainHub.Publish(staffid, "", get)
+		//realtime.MainHub.Publish(staffid, "", get)
 	}
 }
 func GetMlniStaffInfo() (map[string]any, error) {

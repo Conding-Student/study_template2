@@ -2,7 +2,6 @@ package triviafacts
 
 import (
 	"bytes"
-	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
 	"encoding/json"
@@ -84,24 +83,24 @@ func getFileSHA(url, token string) (string, error) {
 	return fileInfo.SHA, nil
 }
 func broadcasting(id string, featureName string) error {
-	var data map[string]any
-	var err error
+	//var data map[string]any
+	//var err error
 
 	switch featureName {
 	case "Articles":
-		data, err = Get_Articles()
-		realtime.MainHub.Publish("ToAll", "get_articles", data)
+		//data, err = Get_Articles()
+		//realtime.MainHub.Publish("ToAll", "get_articles", data)
 
 	case "Trivia Facts":
-		data, err = Get_Trivia()
-		realtime.MainHub.Publish("ToAll", "get_trivia", data)
+		//data, err = Get_Trivia()
+		//realtime.MainHub.Publish("ToAll", "get_trivia", data)
 	default:
 		return nil
 	}
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

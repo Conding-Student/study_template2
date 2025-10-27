@@ -5,8 +5,8 @@ import (
 	"chatbot/pkg/models/errors"
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
-	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,7 +17,7 @@ type Request struct {
 
 func UpdateUsers(c *fiber.Ctx) error {
 	adminAccess := c.Get("adminAccess")
-	staffid := c.Params("id") // optional for logging
+	//staffid := c.Params("id") // optional for logging
 	request := new(Request)
 
 	if err := c.BodyParser(&request); err != nil {
@@ -51,13 +51,14 @@ func UpdateUsers(c *fiber.Ctx) error {
 
 	if message_update == "200" {
 		if staffInfo, err := admincardinc.GetCardIncStaffInfo(); err == nil {
-			realtime.MainHub.Publish("ToAll", "get_cardincstaff", staffInfo)
+			fmt.Println("Publishing updated cardinc staff info via websocket...", staffInfo)
+			//realtime.MainHub.Publish("ToAll", "get_cardincstaff", staffInfo)
 		}
 		if allUser, err := sharedfunctions.GetAllUsers(); err == nil {
 
 			sharedfunctions.ConvertStringToJSONMap(allUser)
-			allUsers := sharedfunctions.GetList(allUser, "getalluser")
-			realtime.MainHub.Publish(staffid, "get_allusers", allUsers)
+			//allUsers := sharedfunctions.GetList(allUser, "getalluser")
+			//realtime.MainHub.Publish(staffid, "get_allusers", allUsers)
 			//realtime.MainHub.Publish("ToAll", "get_allusers", allUsers)
 
 		}

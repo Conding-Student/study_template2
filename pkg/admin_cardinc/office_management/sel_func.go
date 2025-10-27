@@ -1,9 +1,10 @@
 package offices
 
 import (
-	"chatbot/pkg/realtime"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
+	"chatbot/pkg/websocket"
+	"fmt"
 )
 
 // branches
@@ -92,7 +93,7 @@ func Get_Units(params map[string]any) (map[string]any, error) {
 	return result, nil
 }
 
-func Upsert_Branch(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
+func Upsert_Branch(params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -108,14 +109,15 @@ func Upsert_Branch(decision string, staffid string, params map[string]any, param
 
 	params_select["operation"] = 1 // to fetch all branches
 	params_select["region"] = params["Region"]
+	staffid := fmt.Sprintf("%v", params["staffid"])
 
 	if clusters, err := Get_Branch(params_select); err == nil {
-		handleMessage(decision, "Branch", staffid, message, clusters)
+		handleMessage("Branch", staffid, message, clusters)
 	}
 	return result, nil
 }
 
-func Upsert_Center(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
+func Upsert_Center(params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -132,14 +134,15 @@ func Upsert_Center(decision string, staffid string, params map[string]any, param
 	params_select["operation"] = 1 // to fetch all centers
 	params_select["brcode"] = params["brcode"]
 	params_select["unitcode"] = params["unitcode"]
+	staffid := fmt.Sprintf("%v", params["staffid"])
 
 	if clusters, err := Get_Center(params_select); err == nil {
-		handleMessage(decision, "Center", staffid, message, clusters)
+		handleMessage("Center", staffid, message, clusters)
 	}
 	return result, nil
 }
 
-func Upsert_Cluster(decision string, staffid string, params map[string]any) (map[string]any, error) {
+func Upsert_Cluster(params map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -150,16 +153,17 @@ func Upsert_Cluster(decision string, staffid string, params map[string]any) (map
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "upsert_cluster")
 	message := sharedfunctions.GetStringFromMap(result, "retCode")
+	staffid := fmt.Sprintf("%v", params["staffid"])
 
 	// ✅ Safely re-fetch clusters for broadcasting
 	if clusters, err := Get_Clusters(); err == nil {
-		handleMessage(decision, "Cluster", staffid, message, clusters)
+		handleMessage("Cluster", staffid, message, clusters) // null staffid for cluster
 	}
 
 	return result, nil
 }
 
-func Upsert_Region(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
+func Upsert_Region(params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
@@ -175,34 +179,34 @@ func Upsert_Region(decision string, staffid string, params map[string]any, param
 
 	params_select["operation"] = 1 // to fetch all regions
 	params_select["cluster"] = params["cluster"]
+	staffid := fmt.Sprintf("%v", params["staffid"])
 
 	if clusters, err := Get_Region(params_select); err == nil {
-		handleMessage(decision, "Region", staffid, message, clusters)
+		handleMessage("Region", staffid, message, clusters)
 	}
 	return result, nil
 }
 
-func Upsert_Units(decision string, staffid string, params map[string]any, params_select map[string]any) (map[string]any, error) {
+func Upsert_Units(params map[string]any, params_select map[string]any) (map[string]any, error) {
 	db := database.DB
 	var result map[string]any
 
 	// Call PostgreSQL function with JSONB payload
-	if err := db.Raw(`SELECT cardincoffices.SirArjayupsertunits(?)`, params).Scan(&result).Error; err != nil {
+	if err := db.Raw(`SELECT cardincoffices.upsert_units(?)`, params).Scan(&result).Error; err != nil {
 		return nil, err
 	}
 
 	// Convert and unwrap JSON result
 	sharedfunctions.ConvertStringToJSONMap(result)
-	result = sharedfunctions.GetMap(result, "sirarjayupsertunits")
+	result = sharedfunctions.GetMap(result, "upsert_units")
 	message := sharedfunctions.GetStringFromMap(result, "retCode")
-	data := sharedfunctions.GetMap(result, "data")
-	staffId := sharedfunctions.GetStringFromMap(data, "staffid")
 
 	params_select["operation"] = 1 // to fetch all units
 	params_select["brcode"] = params["brcode"]
+	staffid := fmt.Sprintf("%v", params["staffid"])
 
 	if clusters, err := Get_Units(params_select); err == nil {
-		handleMessage(decision, "Unit", staffId, message, clusters)
+		handleMessage("Unit", staffid, message, clusters)
 	}
 	return result, nil
 }
@@ -271,23 +275,24 @@ func UpdateCenterStaffDB(params map[string]any) (map[string]any, error) {
 	return result, nil
 }
 
-func handleMessage(decision string, functionName string, staffid string, message string, result any) {
+func handleMessage(functionName string, staffid string, message string, result any) {
 	if message == "200" {
+		fmt.Println("Broadcasting", functionName, "update to staffID:", staffid)
 		hubs := map[string]func(any){
 			"Center": func(data any) {
-				realtime.MainHub.Publish("ToAll", "get_center", data)
+				websocket.MPublish(staffid, data, "CenOM") //
 			},
 			"Cluster": func(data any) {
-				realtime.MainHub.Publish("ToAll", "get_cluster", data)
+				websocket.MPublish(staffid, data, "CluOM")
 			},
 			"Region": func(data any) {
-				realtime.MainHub.Publish("ToAll", "get_region", data)
+				websocket.MPublish(staffid, data, "RegOM")
 			},
 			"Unit": func(data any) {
-				realtime.MainHub.Publish(staffid, "get_unit", data)
+				websocket.MPublish(staffid, data, "UniOM")
 			},
 			"Branch": func(data any) {
-				realtime.MainHub.Publish("ToAll", "get_branch", data)
+				websocket.MPublish(staffid, data, "BrhOM")
 			},
 		}
 		// Only call the function that matches functionName
