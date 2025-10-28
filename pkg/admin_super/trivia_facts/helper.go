@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"chatbot/pkg/sharedfunctions"
 	"chatbot/pkg/utils/go-utils/database"
+	"chatbot/pkg/websocket"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -82,25 +83,25 @@ func getFileSHA(url, token string) (string, error) {
 
 	return fileInfo.SHA, nil
 }
-func broadcasting(id string, featureName string) error {
-	//var data map[string]any
-	//var err error
+func broadcasting(featureName string) error {
+	var data map[string]any
+	var err error
 
 	switch featureName {
 	case "Articles":
-		//data, err = Get_Articles()
-		//realtime.MainHub.Publish("ToAll", "get_articles", data)
+		data, err = Get_Articles()
+		websocket.WPublish(data, "ArticlesWeb")
 
 	case "Trivia Facts":
-		//data, err = Get_Trivia()
-		//realtime.MainHub.Publish("ToAll", "get_trivia", data)
+		data, err = Get_Trivia()
+		websocket.WPublish(data, "TriFacsWeb")
 	default:
 		return nil
 	}
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

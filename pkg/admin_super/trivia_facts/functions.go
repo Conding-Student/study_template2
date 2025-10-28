@@ -45,7 +45,7 @@ func Update_ArticlesOrTrivia(satffid string, params *TriviaAndArticles) (map[str
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "update_secondary_feature")
 
-	if err := broadcasting(satffid, params.Featurename); err != nil {
+	if err := broadcasting(params.Featurename); err != nil {
 		return nil, err
 	}
 
@@ -62,7 +62,7 @@ func Delete_triviaorfacts(staffid string, params *TriviaAndArticles) (map[string
 
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "delete_triviaorfatcs")
-	if err := broadcasting(staffid, params.Featurename); err != nil {
+	if err := broadcasting(params.Featurename); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -81,7 +81,7 @@ func Insert_ArticleOrTrivia(staffid string, params *TriviaAndArticles) (map[stri
 	sharedfunctions.ConvertStringToJSONMap(result)
 	result = sharedfunctions.GetMap(result, "insert_article")
 
-	if err := broadcasting(staffid, params.Featurename); err != nil {
+	if err := broadcasting(params.Featurename); err != nil {
 		return nil, err
 	}
 

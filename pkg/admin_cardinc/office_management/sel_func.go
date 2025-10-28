@@ -136,10 +136,12 @@ func Upsert_Center(params map[string]any, params_select map[string]any) (map[str
 	params_select["unitcode"] = params["unitcode"]
 	staffid := fmt.Sprintf("%v", params["staffid"])
 
-	if clusters, err := Get_Center(params_select); err == nil {
-		handleMessage("Center", staffid, message, clusters)
+	center, err := Get_Center(params_select)
+	if err != nil {
+		fmt.Println("Error fetching centers for broadcasting:", err)
 	}
-	return result, nil
+	handleMessage("Center", staffid, message, center)
+	return center, nil
 }
 
 func Upsert_Cluster(params map[string]any) (map[string]any, error) {
@@ -181,8 +183,9 @@ func Upsert_Region(params map[string]any, params_select map[string]any) (map[str
 	params_select["cluster"] = params["cluster"]
 	staffid := fmt.Sprintf("%v", params["staffid"])
 
-	if clusters, err := Get_Region(params_select); err == nil {
-		handleMessage("Region", staffid, message, clusters)
+	Region, err := Get_Region(params_select)
+	if err == nil {
+		handleMessage("Region", staffid, message, Region)
 	}
 	return result, nil
 }
@@ -281,18 +284,23 @@ func handleMessage(functionName string, staffid string, message string, result a
 		hubs := map[string]func(any){
 			"Center": func(data any) {
 				websocket.MPublish(staffid, data, "CenOM") //
+				websocket.WPublish(data, "CenOMWeb")
 			},
 			"Cluster": func(data any) {
 				websocket.MPublish(staffid, data, "CluOM")
+				websocket.WPublish(data, "CluOMWeb")
 			},
 			"Region": func(data any) {
 				websocket.MPublish(staffid, data, "RegOM")
+				websocket.WPublish(data, "RegOMWeb")
 			},
 			"Unit": func(data any) {
 				websocket.MPublish(staffid, data, "UniOM")
+				websocket.WPublish(data, "UniOMWeb")
 			},
 			"Branch": func(data any) {
 				websocket.MPublish(staffid, data, "BrhOM")
+				websocket.WPublish(data, "BrhOMWeb")
 			},
 		}
 		// Only call the function that matches functionName

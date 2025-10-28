@@ -4,14 +4,16 @@ import (
 	"chatbot/pkg/models/errors"
 	"chatbot/pkg/models/response"
 	"chatbot/pkg/models/status"
+	"chatbot/pkg/sharedfunctions"
 	"fmt"
+	"net/url"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
 
-var topicSLW = make(map[string]map[string][]*websocket.Conn)
+var topicSLW = make(map[string][]*websocket.Conn)
 var muW sync.Mutex
 
 func WebPerWebSocket() fiber.Handler {
@@ -21,7 +23,7 @@ func WebPerWebSocket() fiber.Handler {
 		staffID := c.Query("id")
 		topic := c.Query("topic")
 
-		if staffID == "" || topic == "" {
+		if topic == "" {
 			c.WriteJSON(response.ResponseModel{
 				RetCode: "401",
 				Message: status.RetCode401,
@@ -35,11 +37,7 @@ func WebPerWebSocket() fiber.Handler {
 
 		// Register connection
 		muW.Lock()
-		if _, ok := topicSLW[topic]; !ok {
-			topicSLW[topic] = make(map[string][]*websocket.Conn)
-		}
-		topicSLW[topic][staffID] = append(topicSLW[topic][staffID], c)
-
+		topicSLW[topic] = append(topicSLW[topic], c)
 		muW.Unlock()
 
 		// Keep connection alive
@@ -51,17 +49,17 @@ func WebPerWebSocket() fiber.Handler {
 
 		// Remove connection on close
 		muW.Lock()
-		conns := topicSLW[topic][staffID]
+		conns := topicSLW[topic]
 		for i, conn := range conns {
 			if conn == c {
-				topicSLW[topic][staffID] = append(conns[:i], conns[i+1:]...)
+				topicSLW[topic] = append(conns[:i], conns[i+1:]...)
 				break
 			}
 		}
 
 		// Clean up empty slices/maps
-		if len(topicSLW[topic][staffID]) == 0 {
-			delete(topicSLW[topic], staffID)
+		if len(topicSLW[topic]) == 0 {
+			delete(topicSLW, staffID)
 		}
 		if len(topicSLW[topic]) == 0 {
 			delete(topicSLW, topic)
@@ -70,20 +68,34 @@ func WebPerWebSocket() fiber.Handler {
 	})
 }
 
-func Publish(staffID string, data any, topic string) {
+func WPublish(data any, topic string) {
 
-	topicCH := topicSLW[topic]
-	topicConn := topicCH[staffID]
-	fmt.Println("Publishing to topic:", topic, "for staffID:", staffID)
-	fmt.Println("Notifying", len(topicConn), "connections for staffID", staffID)
+	topicConn := topicSLW[topic]
+	fmt.Println("Publishing via Web on topic", len(topicConn), "connections for topic", topic)
 
 	muW.Lock()
 	for _, conn := range topicConn {
 		conn.WriteJSON(fiber.Map{
 			"topic": topic,
-			"type":  staffID, // e.g. "201008-03206"
 			"data":  data,
 		})
 	}
 	muW.Unlock()
+}
+
+func WSWebAuthMiddleware(c *fiber.Ctx) error {
+
+	token := c.Query("Authorization")
+	decodedToken, err := url.QueryUnescape(token)
+
+	if err != nil {
+		return c.Status(400).SendString("Invalid token encoding")
+	}
+
+	isValid, _, _, _, msg, err := sharedfunctions.ValidateToken(decodedToken)
+	if err != nil || !isValid {
+		return c.Status(401).SendString(msg)
+	}
+
+	return c.Next()
 }
